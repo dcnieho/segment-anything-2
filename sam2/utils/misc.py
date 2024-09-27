@@ -11,10 +11,10 @@ from collections import OrderedDict
 from threading import Thread
 
 import numpy as np
+from PIL import Image
 import torch
 from torchvision.io.video_reader import VideoReader
-from torchvision.transforms import Resize
-from PIL import Image
+from torchvision.transforms import functional
 from torchvision import transforms
 from tqdm import tqdm
 import zipfile
@@ -107,7 +107,7 @@ def _load_img_as_tensor(img_path, image_size):
 
 def _resize_img_tensor(img: torch.Tensor, image_size):
     video_height, video_width = img.shape[1:]
-    transform = Resize((image_size, image_size))
+    transform = transforms.Resize((image_size, image_size))
     img_resized = transform(img) / 255.0
     return img_resized, video_height, video_width
 
@@ -386,55 +386,85 @@ class VideoFrameLoader:
         """
         Initialize the video frame loader with image paths or zip file, image size, mean, std, and caching options.
         """
+        self.src_type, img_paths = img_paths
         self.img_paths = img_paths
+        # output size
         self.image_size = image_size
+        # input size
+        self.video_width = None
+        self.video_height= None
         self.img_mean = img_mean
         self.img_std = img_std
         self.offload_to_cpu = offload_to_cpu
         self.device = compute_device
         self.cache_size = cache_size
 
-        # Check if it's a zip file
-        if isinstance(self.img_paths, tuple):
-            self.zip_file_path, self.img_paths = self.img_paths
-            self.zip_file = zipfile.ZipFile(self.zip_file_path, 'r')
-        else:
-            self.zip_file = None
-        self.num_frames = len(img_paths)
+        self.zip_file = None
+        self.video_stream = None
+        self.video_data = None
+        self.video_fps = None
+        self.video_len = None
+        self.video_frame_index = None
+        if self.src_type=='video':
+            self.video_stream = VideoReader(self.img_paths, stream="video")
+            self.video_data = self.video_stream.get_metadata()['video']
+            if "fps" in self.video_data:
+                self.video_fps = self.video_data['fps'][0]
+            else:
+                self.video_fps = self.video_data["framerate"][0]
+            self.video_len = int(self.video_data['duration'][0] * self.video_fps)
 
-        # Initialize image transformations
-        self.transform = transforms.Compose(
-            [
+            self.video_frame_index = -1
+            tforms = [
                 transforms.Resize((image_size, image_size)),
-                transforms.ToTensor(),
+                transforms.Lambda(transforms.functional.convert_image_dtype),   # NB: this divides by 255 also
                 transforms.Normalize(mean=img_mean, std=img_std),
             ]
-        )
+        else:
+            if self.src_type=='zip':
+                self.zip_file_path, self.img_paths = self.img_paths
+                self.zip_file = zipfile.ZipFile(self.zip_file_path, 'r')
+            self.num_frames = len(img_paths)
+            tforms = [
+                transforms.Resize((image_size, image_size)),
+                transforms.ToTensor(),  # NB: this divides by 255 also
+                transforms.Normalize(mean=img_mean, std=img_std),
+            ]
+
+        # Initialize image transformations
+        self.transform = transforms.Compose(tforms)
 
         # Create an LRU cache for frames
         self.frame_cache = LRUCache(capacity=self.cache_size)
-        self.video_width, self.video_height = self._get_frame_dimensions()
-
-    def _get_frame_dimensions(self):
-        """Get the dimensions of the frames (width, height)."""
-        if self.zip_file is not None:
-            # Handle zip file case
-            with self.zip_file.open(self.img_paths[0]) as first_image:
-                img = Image.open(first_image)
-        else:
-            img = Image.open(self.img_paths[0])
-        return img.width, img.height
+        # load first frame. Also sets video dimensions
+        self._load_frame(0)
 
     def _load_frame(self, idx):
         """Internal method to load and preprocess a frame."""
-        if self.zip_file is not None:
-            # Handle zip file case
-            with self.zip_file.open(self.img_paths[idx]) as img_file:
-                img = Image.open(img_file)
+        if self.video_stream is not None:
+            if self.video_frame_index + 1 == idx:
+                img_dict = self.video_stream.__next__()
+            else:
+                timestamp = idx / self.video_fps
+                self.video_stream = self.video_stream.seek(timestamp)
+                img_dict = self.video_stream.__next__()
+                # Seek to the correct frame
+                while abs(timestamp - img_dict['pts']) > (1 / self.video_fps):
+                    img_dict = self.video_stream.__next__()
+            self.video_frame_index = idx
+            img = img_dict['data']
+            self.video_height, self.video_width = img.shape[1:]
         else:
-            img = Image.open(self.img_paths[idx])
-        img_tensor = self.transform(img.convert("RGB"))
-        return img_tensor
+            if self.zip_file is not None:
+                # Handle zip file case
+                with self.zip_file.open(self.img_paths[idx]) as img_file:
+                    img = Image.open(img_file).convert("RGB")
+            else:
+                img = Image.open(self.img_paths[idx]).convert("RGB")
+            self.video_width  = img.width
+            self.video_height = img.height
+
+        return self.transform(img)
 
     def get_frame(self, idx):
         """Fetch a frame using the LRU cache or load it if it's not cached."""
@@ -472,41 +502,49 @@ def load_video_frames_with_cache(
     """
 
     # Check if the input is a directory
-    extensions = ('.jpg', '.jpeg', '.png')
-    container_path = None
+    img_extensions = ('.jpg', '.jpeg', '.png')
+    vid_extensions = (".mp4", ".avi", ".mov")
+    src_type = None
     if isinstance(video_path, str):
         if os.path.isdir(video_path):
             # Directory of image files
             file_names = os.listdir(video_path)
+            src_type = 'image_list'
         elif zipfile.is_zipfile(video_path):
             with zipfile.ZipFile(video_path, 'r') as zipf:
                 file_names = zipf.namelist()
-                container_path = video_path
+            src_type = 'zip'
+        elif os.path.isfile(video_path) and video_path.lower().endswith(vid_extensions):
+            src_type = 'video'
         else:
             raise NotImplementedError(
-                "Only JPEG frames in directories or zip files are supported. Use ffmpeg to extract frames if needed."
+                "Only JPEG and PNG frames in directories or zip files, or MP¤, AVI and MOV video files are supported. Use ffmpeg to extract frames from other videos if needed."
             )
     else:
         raise NotImplementedError(
-            "Unsupported input type for video_path. Expected a directory path or zip file path."
+            "Unsupported input type for video_path. Expected a string containing a directory path, zip file path or video file path."
         )
 
     # filter out the images
-    frame_names = [name for name in file_names if name.lower().endswith(extensions) and (not img_fname_contains or img_fname_contains in name)]
-    # sort
-    frame_names.sort(key=natsort.os_sort_keygen())
-    # package
-    if container_path:
-        img_paths = (video_path, frame_names)
+    if src_type=='video':
+        img_paths = video_path
     else:
-        img_paths = [os.path.join(video_path, frame_name) for frame_name in frame_names]
+        frame_names = [name for name in file_names if name.lower().endswith(img_extensions) and (not img_fname_contains or img_fname_contains in name)]
+        # sort
+        frame_names.sort(key=natsort.os_sort_keygen())
+        # package
+        if src_type=='zip':
+            img_paths = (video_path, frame_names)
+        else:
+            img_paths = [os.path.join(video_path, frame_name) for frame_name in frame_names]
 
-    # Ensure there are frames available
-    num_frames = len(frame_names)
-    if num_frames == 0:
-        raise RuntimeError(f"No images found in {video_path}")
+        # Ensure there are frames available
+        num_frames = len(frame_names)
+        if num_frames == 0:
+            raise RuntimeError(f"No images found in {video_path}")
 
     # Initialize VideoFrameLoader with LRU cache
+    img_paths = (src_type,img_paths)
     frame_loader = VideoFrameLoader(
         img_paths=img_paths,
         image_size=image_size,
