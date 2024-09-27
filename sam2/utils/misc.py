@@ -6,7 +6,7 @@
 
 import os
 import warnings
-import pathlib
+import natsort
 from collections import OrderedDict
 from threading import Thread
 
@@ -410,12 +410,12 @@ def load_video_frames_with_cache(
                 for p in os.listdir(video_path)
                 if os.path.splitext(p)[-1].lower() in extensions
             ]
-            frame_names.sort(key=lambda p: int(os.path.splitext(p)[0].split('_')[-1]))
+            frame_names.sort(key=natsort.os_sort_keygen())
             img_paths = [os.path.join(video_path, frame_name) for frame_name in frame_names]
         elif zipfile.is_zipfile(video_path):
             with zipfile.ZipFile(video_path, 'r') as zipf:
                 frame_names = [name for name in zipf.namelist() if name.lower().endswith(extensions)]
-                frame_names.sort(key=lambda p: int(os.path.splitext(p)[0].split('_')[-1]))
+                frame_names.sort(key=natsort.os_sort_keygen())
                 img_paths = (video_path, frame_names)
         else:
             raise NotImplementedError(
