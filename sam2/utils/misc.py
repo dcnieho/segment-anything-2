@@ -390,6 +390,7 @@ def load_video_frames_with_cache(
     video_path,
     image_size,
     offload_video_to_cpu,
+    img_fname_contains=None,    # str that filenames are filtered on
     cache_size=100,
     img_mean=(0.485, 0.456, 0.406),
     img_std=(0.229, 0.224, 0.225),
@@ -402,21 +403,15 @@ def load_video_frames_with_cache(
 
     # Check if the input is a directory
     extensions = ('.jpg', '.jpeg', '.png')
+    container_path = None
     if isinstance(video_path, str):
         if os.path.isdir(video_path):
             # Directory of image files
-            frame_names = [
-                p
-                for p in os.listdir(video_path)
-                if os.path.splitext(p)[-1].lower() in extensions
-            ]
-            frame_names.sort(key=natsort.os_sort_keygen())
-            img_paths = [os.path.join(video_path, frame_name) for frame_name in frame_names]
+            file_names = os.listdir(video_path)
         elif zipfile.is_zipfile(video_path):
             with zipfile.ZipFile(video_path, 'r') as zipf:
-                frame_names = [name for name in zipf.namelist() if name.lower().endswith(extensions)]
-                frame_names.sort(key=natsort.os_sort_keygen())
-                img_paths = (video_path, frame_names)
+                file_names = zipf.namelist()
+                container_path = video_path
         else:
             raise NotImplementedError(
                 "Only JPEG frames in directories or zip files are supported. Use ffmpeg to extract frames if needed."
@@ -425,6 +420,16 @@ def load_video_frames_with_cache(
         raise NotImplementedError(
             "Unsupported input type for video_path. Expected a directory path or zip file path."
         )
+
+    # filter out the images
+    frame_names = [name for name in file_names if name.lower().endswith(extensions) and (not img_fname_contains or img_fname_contains in name)]
+    # sort
+    frame_names.sort(key=natsort.os_sort_keygen())
+    # package
+    if container_path:
+        img_paths = (video_path, frame_names)
+    else:
+        img_paths = [os.path.join(video_path, frame_name) for frame_name in frame_names]
 
     # Ensure there are frames available
     num_frames = len(frame_names)
