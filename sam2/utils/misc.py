@@ -424,7 +424,7 @@ class VideoFrameLoader:
             if self.src_type=='zip':
                 self.zip_file_path, self.img_paths = self.img_paths
                 self.zip_file = zipfile.ZipFile(self.zip_file_path, 'r')
-            self.num_frames = len(img_paths)
+            self.num_frames = len(self.img_paths)
             tforms = [
                 transforms.Resize((image_size, image_size)),
                 transforms.ToTensor(),  # NB: this divides by 255 also
