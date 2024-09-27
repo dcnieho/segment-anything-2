@@ -399,11 +399,11 @@ class VideoFrameLoader:
         self.device = compute_device
         self.cache_size = cache_size
 
+        self.num_frames = None
         self.zip_file = None
         self.video_stream = None
         self.video_data = None
         self.video_fps = None
-        self.video_len = None
         self.video_frame_index = None
         if self.src_type=='video':
             self.video_stream = VideoReader(self.img_paths, stream="video")
@@ -412,7 +412,7 @@ class VideoFrameLoader:
                 self.video_fps = self.video_data['fps'][0]
             else:
                 self.video_fps = self.video_data["framerate"][0]
-            self.video_len = int(self.video_data['duration'][0] * self.video_fps)
+            self.num_frames = int(self.video_data['duration'][0] * self.video_fps)
 
             self.video_frame_index = -1
             tforms = [
