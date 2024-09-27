@@ -93,7 +93,7 @@ def retrieve_prompt_from_subject(zip_path, frame_idx):
                 'box': None
             }
         },
-        #'size': pupil_mask.shape[:2]
+        'size': pupil_mask.shape[:2]
     }
 
 
