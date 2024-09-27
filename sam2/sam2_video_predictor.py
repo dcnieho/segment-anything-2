@@ -51,7 +51,7 @@ class SAM2VideoPredictor(SAM2Base):
         offload_video_to_cpu=False,
         offload_state_to_cpu=False,
         async_loading_frames=False,
-        image_cache_size=500,  # Adjust cache size as needed
+        image_cache_size=100,  # Adjust cache size as needed
         image_feature_cache_size=10,  # Adjust cache size as needed
     ):
         """Initialize an inference state."""
