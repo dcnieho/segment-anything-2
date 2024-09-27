@@ -6,6 +6,7 @@
 
 import os
 import warnings
+import pathlib
 from collections import OrderedDict
 from threading import Thread
 
@@ -14,7 +15,7 @@ import torch
 from PIL import Image
 from torchvision import transforms
 from tqdm import tqdm
-
+import zipfile
 
 def get_sdpa_settings():
     if torch.cuda.is_available():
@@ -313,7 +314,7 @@ class VideoFrameLoader:
         cache_size=100,
     ):
         """
-        Initialize the video frame loader with image paths, image size, mean, std, and caching options.
+        Initialize the video frame loader with image paths or zip file, image size, mean, std, and caching options.
         """
         self.img_paths = img_paths
         self.image_size = image_size
@@ -321,8 +322,15 @@ class VideoFrameLoader:
         self.img_std = img_std
         self.offload_to_cpu = offload_to_cpu
         self.device = compute_device
-        self.num_frames = len(img_paths)
         self.cache_size = cache_size
+
+        # Check if it's a zip file
+        if isinstance(self.img_paths, tuple):
+            self.zip_file_path, self.img_paths = self.img_paths
+            self.zip_file = zipfile.ZipFile(self.zip_file_path, 'r')
+        else:
+            self.zip_file = None
+        self.num_frames = len(img_paths)
 
         # Initialize image transformations
         self.transform = transforms.Compose(
@@ -339,13 +347,23 @@ class VideoFrameLoader:
 
     def _get_frame_dimensions(self):
         """Get the dimensions of the frames (width, height)."""
-        img = Image.open(self.img_paths[0])
+        if self.zip_file is not None:
+            # Handle zip file case
+            with self.zip_file.open(self.img_paths[0]) as first_image:
+                img = Image.open(first_image)
+        else:
+            img = Image.open(self.img_paths[0])
         return img.width, img.height
 
     def _load_frame(self, idx):
         """Internal method to load and preprocess a frame."""
-        img = Image.open(self.img_paths[idx]).convert("RGB")
-        img_tensor = self.transform(img)
+        if self.zip_file is not None:
+            # Handle zip file case
+            with self.zip_file.open(self.img_paths[idx]) as img_file:
+                img = Image.open(img_file)
+        else:
+            img = Image.open(self.img_paths[idx])
+        img_tensor = self.transform(img.convert("RGB"))
         return img_tensor
 
     def get_frame(self, idx):
@@ -375,35 +393,43 @@ def load_video_frames_with_cache(
     cache_size=100,
     img_mean=(0.485, 0.456, 0.406),
     img_std=(0.229, 0.224, 0.225),
-    compute_device=torch.device("cuda"),
+    compute_device=torch.device("cuda")
 ):
     """
-    Load video frames from a directory of JPEG files with LRU cache for high efficiency.
+    Load video frames from a directory of JPEG files or a zipfile containing JPEG files with LRU cache for high efficiency.
     The frames are resized to image_size x image_size and normalized.
     """
-    # Ensure video_path is a directory
-    if isinstance(video_path, str) and os.path.isdir(video_path):
-        jpg_folder = video_path
+
+    # Check if the input is a directory
+    extensions = ('.jpg', '.jpeg', '.png')
+    if isinstance(video_path, str):
+        if os.path.isdir(video_path):
+            # Directory of image files
+            frame_names = [
+                p
+                for p in os.listdir(video_path)
+                if os.path.splitext(p)[-1].lower() in extensions
+            ]
+            frame_names.sort(key=lambda p: int(os.path.splitext(p)[0].split('_')[-1]))
+            img_paths = [os.path.join(video_path, frame_name) for frame_name in frame_names]
+        elif zipfile.is_zipfile(video_path):
+            with zipfile.ZipFile(video_path, 'r') as zipf:
+                frame_names = [name for name in zipf.namelist() if name.lower().endswith(extensions)]
+                frame_names.sort(key=lambda p: int(os.path.splitext(p)[0].split('_')[-1]))
+                img_paths = (video_path, frame_names)
+        else:
+            raise NotImplementedError(
+                "Only JPEG frames in directories or zip files are supported. Use ffmpeg to extract frames if needed."
+            )
     else:
         raise NotImplementedError(
-            "Only JPEG frames are supported. Use ffmpeg to extract frames if needed."
+            "Unsupported input type for video_path. Expected a directory path or zip file path."
         )
-
-    # Get sorted list of JPEG frame files
-    frame_names = [
-        p
-        for p in os.listdir(jpg_folder)
-        if os.path.splitext(p)[-1] in [".jpg", ".jpeg", ".JPG", ".JPEG"]
-    ]
-    frame_names.sort(key=lambda p: int(os.path.splitext(p)[0]))
 
     # Ensure there are frames available
     num_frames = len(frame_names)
     if num_frames == 0:
-        raise RuntimeError(f"No images found in {jpg_folder}")
-
-    # Generate full paths to frames
-    img_paths = [os.path.join(jpg_folder, frame_name) for frame_name in frame_names]
+        raise RuntimeError(f"No images found in {video_path}")
 
     # Initialize VideoFrameLoader with LRU cache
     frame_loader = VideoFrameLoader(
