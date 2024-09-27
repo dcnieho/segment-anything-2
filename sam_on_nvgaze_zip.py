@@ -133,6 +133,7 @@ if __name__ == '__main__':
     offload_to_cpu = False
     chunk_size = 5000   # store to file once this many frames are processed
     cache_size = 1000   # maximum number of input images to keep in memory
+    image_feature_cache_size = 100
     for video_dir in subject_folders:
         try:
             this_output_path = output_bin / video_dir.parent.name
@@ -152,7 +153,9 @@ if __name__ == '__main__':
                                                 , offload_video_to_cpu=offload_to_cpu
                                                 , offload_state_to_cpu=offload_to_cpu
                                                 , async_loading_frames=True
-                                                , image_cache_size=cache_size)
+                                                , image_cache_size=cache_size
+                                                , image_feature_cache_size=image_feature_cache_size
+                                                , img_fname_contains='type_img_frame')
 
             add_pupil_prompt(predictor, inference_state, this_prompt['prompt'], ann_frame_index=frame_idx)
 
