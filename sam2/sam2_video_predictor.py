@@ -53,6 +53,7 @@ class SAM2VideoPredictor(SAM2Base):
         async_loading_frames=False,
         image_cache_size=100,  # Adjust cache size as needed
         image_feature_cache_size=10,  # Adjust cache size as needed
+        img_fname_contains=None
     ):
         """Initialize an inference state."""
         compute_device = self.device  # device of the model
@@ -63,6 +64,7 @@ class SAM2VideoPredictor(SAM2Base):
             offload_video_to_cpu=offload_video_to_cpu,
             cache_size=image_cache_size,
             compute_device=compute_device,
+            img_fname_contains=img_fname_contains
         )
         # Initialize inference_state and store the frame loader
         inference_state = {}
