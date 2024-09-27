@@ -110,7 +110,7 @@ if __name__ == '__main__':
         backup_bin.mkdir()
 
     # Path containing the videos (zip files or subdirectory of videos)
-    root_dir = r"//et-nas.humlab.lu.se/FLEX/datasets synthetic/nvidia/synthetic_dataset"
+    root_dir = r"D:/nvgaze"
     subject_folders = list(pathlib.Path(root_dir).rglob("*.zip")) # should be a list of all zipfile paths
 
     # Set up logging to file and console
@@ -129,7 +129,7 @@ if __name__ == '__main__':
     console_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
     logger.addHandler(console_handler)
 
-    predictor = build_sam2_video_predictor("sam2_hiera_t.yaml", r"C:\dat\projects\Virmarie SAM2\segment-anything-2\checkpoints\sam2_hiera_tiny.pt", device=device)
+    predictor = build_sam2_video_predictor("sam2_hiera_t.yaml", r"C:\Users\Dee\Desktop\sam2\sam2-dee\checkpoints\sam2_hiera_tiny.pt", device=device)
     offload_to_cpu = False
     chunk_size = 5000   # store to file once this many frames are processed
     cache_size = 1000   # maximum number of input images to keep in memory
