@@ -6,7 +6,7 @@
 
 import warnings
 from collections import OrderedDict
-
+import os
 import torch
 
 from tqdm import tqdm
@@ -52,7 +52,7 @@ class SAM2VideoPredictor(SAM2Base):
         image_cache_size=500,  # Adjust cache size as needed
         image_feature_cache_size=10,  # Adjust cache size as needed
     ):
-        """Initialize an inference state."""
+        """Initialize a inference state."""
         compute_device = self.device  # device of the model
         # Load video frames using the caching mechanism
         frame_loader = load_video_frames_with_cache(
