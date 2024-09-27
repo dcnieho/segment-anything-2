@@ -300,10 +300,10 @@ def load_video_frames_from_jpg_images(
 
     You can load a frame asynchronously by setting `async_loading_frames` to `True`.
     """
+    img_mean = torch.tensor(img_mean, dtype=torch.float32)[:, None, None]
+    img_std = torch.tensor(img_std, dtype=torch.float32)[:, None, None]
     if isinstance(video_path, str) and os.path.isdir(video_path):
         jpg_folder = video_path
-
-
         frame_names = [
             p
             for p in os.listdir(jpg_folder)
@@ -314,15 +314,12 @@ def load_video_frames_from_jpg_images(
         if num_frames == 0:
             raise RuntimeError(f"no images found in {jpg_folder}")
         img_paths = [os.path.join(jpg_folder, frame_name) for frame_name in frame_names]
-        img_mean = torch.tensor(img_mean, dtype=torch.float32)[:, None, None]
-        img_std = torch.tensor(img_std, dtype=torch.float32)[:, None, None]
 
         if async_loading_frames:
             lazy_images = AsyncVideoFrameLoader(
                 img_paths, image_size, offload_video_to_cpu, img_mean, img_std
             )
             return lazy_images, lazy_images.video_height, lazy_images.video_width
-
         images = torch.zeros(num_frames, 3, image_size, image_size, dtype=torch.float32)
         for n, img_path in enumerate(tqdm(img_paths, desc="frame loading (JPEG)")):
             images[n], video_height, video_width = _load_img_as_tensor(img_path, image_size)
@@ -335,8 +332,6 @@ def load_video_frames_from_jpg_images(
         images /= img_std
         return images, video_height, video_width
     elif isinstance(video_path, str) and os.path.isfile(video_path) and os.path.splitext(video_path)[1] in [".mp4", ".avi", ".mov"]:
-        img_mean = torch.tensor(img_mean, dtype=torch.float32)[:, None, None]
-        img_std = torch.tensor(img_std, dtype=torch.float32)[:, None, None]
         lazy_images = SyncedVideoStreamLoader(
             video_path, image_size, offload_video_to_cpu, img_mean, img_std
         )
