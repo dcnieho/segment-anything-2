@@ -9,6 +9,7 @@ import zipfile
 import traceback
 import logging
 import gc
+import natsort
 from sam2.build_sam import build_sam2_video_predictor
 
 
@@ -112,6 +113,7 @@ if __name__ == '__main__':
     # Path containing the videos (zip files or subdirectory of videos)
     root_dir = r"D:/nvgaze"
     subject_folders = list(pathlib.Path(root_dir).rglob("*.zip")) # should be a list of all zipfile paths
+    subject_folders = natsort.natsorted(subject_folders)
 
     # Set up logging to file and console
     logger = logging.getLogger()
