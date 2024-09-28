@@ -3,6 +3,7 @@ os.environ['TORCH_CUDNN_SDPA_ENABLED'] = '1'
 import numpy as np
 import torch
 import pickle
+import compress_pickle
 import pathlib
 from PIL import Image
 import zipfile
@@ -161,7 +162,7 @@ if __name__ == '__main__':
             if not this_output_path.is_dir():
                 this_output_path.mkdir()
 
-            savepath_videosegs = this_output_path / 'segments_0.pickle'
+            savepath_videosegs = this_output_path / 'segments_0.pickle.gz'
             if os.path.exists(savepath_videosegs):
                 print(f"Already done. Skipping {video_dir}")
                 continue
@@ -180,9 +181,9 @@ if __name__ == '__main__':
             add_pupil_prompt(predictor, inference_state, this_prompt['prompt'], ann_frame_index=frame_idx)
 
             for i,video_segments in enumerate(propagate(predictor, inference_state, chunk_size, this_output_path, this_prompt['prompt'])):
-                savepath_videosegs = this_output_path / f'segments_{i}.pickle'
+                savepath_videosegs = this_output_path / f'segments_{i}.pickle.gz'
                 with open(savepath_videosegs, 'wb') as handle:
-                    pickle.dump(video_segments, handle, protocol=pickle.HIGHEST_PROTOCOL)
+                    compress_pickle.dump(video_segments, handle, pickler_kwargs={'protocol': pickle.HIGHEST_PROTOCOL})
                 video_segments.clear()
 
             predictor.reset_state(inference_state)
