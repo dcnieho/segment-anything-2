@@ -100,7 +100,7 @@ class SAM2VideoPredictor(SAM2Base):
         # A storage to hold the model's tracking results and states on each frame
         inference_state["output_dict"] = {
             "cond_frame_outputs": {},  # dict containing {frame_idx: <out>}
-            "non_cond_frame_outputs": {},  # dict containing {frame_idx: <out>}
+            "non_cond_frame_outputs": LRUCache(self.memory_temporal_stride_for_eval*self.num_maskmem*3),  # dict containing {frame_idx: <out>}, *3 instead of *2 for safety (*2 tested to work corrections, but use *3 as i am not sure i fully understand inner workings)
         }
         # Slice (view) of each object tracking results, sharing the same memory with "output_dict"
         inference_state["output_dict_per_obj"] = {}
@@ -157,7 +157,7 @@ class SAM2VideoPredictor(SAM2Base):
             inference_state["mask_inputs_per_obj"][obj_idx] = {}
             inference_state["output_dict_per_obj"][obj_idx] = {
                 "cond_frame_outputs": {},  # dict containing {frame_idx: <out>}
-                "non_cond_frame_outputs": {},  # dict containing {frame_idx: <out>}
+                "non_cond_frame_outputs": LRUCache(self.memory_temporal_stride_for_eval*self.num_maskmem*3),  # dict containing {frame_idx: <out>}, *3 instead of *2 for safety (*2 tested to work corrections, but use *3 as i am not sure i fully understand inner workings)
             }
             inference_state["temp_output_dict_per_obj"][obj_idx] = {
                 "cond_frame_outputs": {},  # dict containing {frame_idx: <out>}
