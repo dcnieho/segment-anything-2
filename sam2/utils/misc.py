@@ -362,6 +362,9 @@ class LRUCache:
         self.cache.move_to_end(key)
         return self.cache[key]
 
+    def __getitem__(self, key):
+        return self.get(key)
+
     def put(self, key, value):
         # Insert the item or update the existing one
         if key in self.cache:
@@ -370,6 +373,18 @@ class LRUCache:
         # If the cache exceeds the capacity, pop the first (least recently used) item
         if len(self.cache) > self.capacity:
             self.cache.popitem(last=False)
+
+    def __setitem__(self, key, value):
+        self.put(key, value)
+
+    def __contains__(self, key):
+        return key in self.cache
+
+    def pop(self, key, default=None):
+        return self.cache.pop(key, default)
+
+    def clear(self):
+        self.cache.clear()
 
 
 class VideoFrameLoader:
