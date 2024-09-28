@@ -889,8 +889,7 @@ class SAM2VideoPredictor(SAM2Base):
     def _get_image_feature(self, inference_state, frame_idx, batch_size):
         """Compute the image features on a given frame."""
         # Look up in the cache first (LRU cache)
-        cached = inference_state["cached_features"].get(frame_idx)
-        image, backbone_out = cached if cached is not None else (None, None)
+        image, backbone_out = inference_state["cached_features"].get(frame_idx, (None, None))
         if backbone_out is None:
             # Cache miss -- we will run inference on a single image
             device = inference_state["device"]

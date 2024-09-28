@@ -355,9 +355,9 @@ class LRUCache:
         self.cache = OrderedDict()
         self.capacity = capacity
 
-    def get(self, key):
+    def get(self, key, default=None):
         if key not in self.cache:
-            return None
+            return default
         # Move the key to the end to show that it was recently used
         self.cache.move_to_end(key)
         return self.cache[key]
