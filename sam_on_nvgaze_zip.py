@@ -122,7 +122,7 @@ if __name__ == '__main__':
     this_dataset = 'nvgaze'
 
     # Output path for results and backup
-    output_bin = pathlib.Path(f"//et-nas.humlab.lu.se/FLEX/datasets synthetic/nvidia/sam2/{this_dataset}/{from_sample}/") # will contain saved masks 
+    output_bin = pathlib.Path(f"//et-nas.humlab.lu.se/FLEX/datasets synthetic/nvidia/sam2/{this_dataset}/{from_sample}/") # will contain saved masks
     backup_bin = output_bin / 'backup'
     if not output_bin.is_dir():
         output_bin.mkdir()
