@@ -10,6 +10,7 @@ import traceback
 import logging
 import gc
 import natsort
+import cv2
 from sam2.build_sam import build_sam2_video_predictor
 
 
@@ -31,13 +32,30 @@ if device.type == "cuda":
         torch.backends.cudnn.allow_tf32 = True
 
 
-def propagate(predictor, inference_state, chunk_size):
+def propagate(predictor, inference_state, chunk_size, save_path=None, prompt=None):
     # run propagation throughout the video and collect the results in a dict
     video_segments = {}  # video_segments contains the per-frame segmentation results
     i = 0
     for out_frame_idx, out_obj_ids, out_mask_logits in predictor.propagate_in_video(inference_state):
         i += 1
         video_segments[out_frame_idx] = {out_obj_id: (out_mask_logits[i] > 0.0).cpu().numpy() for i, out_obj_id in enumerate(out_obj_ids)}
+        if i==1 and save_path:
+            img = inference_state["images"].get_frame(out_frame_idx)
+            img = img.permute(1,2,0).numpy()
+            img_min, img_max = img.min(), img.max()
+            img = (img-img_min)/(img_max-img_min)
+            img = Image.fromarray(np.uint8(img*255)).resize((inference_state["images"].video_width, inference_state["images"].video_height))
+            img.save(pathlib.Path(save_path) / f'frame{out_frame_idx}.png')
+            # add output mask
+            img = np.array(img)
+            blueImg = np.zeros(img.shape, img.dtype)
+            blueImg[:,:] = (0, 0, 255)
+            blueMask = cv2.bitwise_and(blueImg, blueImg, mask=np.uint8(video_segments[out_frame_idx][0].squeeze() > 0.5))
+            img = cv2.addWeighted(blueMask, .6, img, .4, 0)
+            if prompt is not None:
+                p=prompt['pupil']['points'].flatten()
+                img = cv2.circle(img, (p[0], p[1]), 1, (255, 0, 0), 3)
+            Image.fromarray(img).save(pathlib.Path(save_path) / f'frame{out_frame_idx}_mask.png')
         if i%chunk_size == 0:
             yield video_segments
             video_segments.clear()
@@ -161,7 +179,7 @@ if __name__ == '__main__':
 
             add_pupil_prompt(predictor, inference_state, this_prompt['prompt'], ann_frame_index=frame_idx)
 
-            for i,video_segments in enumerate(propagate(predictor, inference_state, chunk_size)):
+            for i,video_segments in enumerate(propagate(predictor, inference_state, chunk_size, this_output_path, this_prompt['prompt'])):
                 savepath_videosegs = this_output_path / f'segments_{i}.pickle'
                 with open(savepath_videosegs, 'wb') as handle:
                     pickle.dump(video_segments, handle, protocol=pickle.HIGHEST_PROTOCOL)
