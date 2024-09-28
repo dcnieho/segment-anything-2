@@ -151,8 +151,8 @@ if __name__ == '__main__':
 
     predictor = build_sam2_video_predictor("sam2_hiera_t.yaml", r"C:\Users\Dee\Desktop\sam2\sam2-dee\checkpoints\sam2_hiera_tiny.pt", device=device)
     offload_to_cpu = False
-    chunk_size = 5000   # store to file once this many frames are processed
-    cache_size = 1000   # maximum number of input images to keep in memory
+    chunk_size = 10000  # store to file once this many frames are processed
+    cache_size = 200    # maximum number of input images to keep in memory
     image_feature_cache_size = 100
     for video_dir in subject_folders:
         try:
