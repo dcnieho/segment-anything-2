@@ -53,7 +53,7 @@ def propagate(predictor, inference_state, chunk_size, save_path=None, prompt=Non
             blueMask = cv2.bitwise_and(blueImg, blueImg, mask=np.uint8(video_segments[out_frame_idx][0].squeeze() > 0.5))
             img = cv2.addWeighted(blueMask, .6, img, .4, 0)
             if prompt is not None:
-                p=prompt['pupil']['points'].flatten()
+                p=[int(x) for x in prompt['pupil']['points'].flatten()]
                 img = cv2.circle(img, (p[0], p[1]), 1, (255, 0, 0), 3)
             Image.fromarray(img).save(pathlib.Path(save_path) / f'frame{out_frame_idx}_mask.png')
         if i%chunk_size == 0:
