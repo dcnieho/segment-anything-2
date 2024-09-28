@@ -893,13 +893,7 @@ class SAM2VideoPredictor(SAM2Base):
         if backbone_out is None:
             # Cache miss -- we will run inference on a single image
             device = inference_state["device"]
-            image = (
-                inference_state["images"]
-                .get_frame(frame_idx)
-                .to(device)
-                .float()
-                .unsqueeze(0)
-            )
+            image = inference_state["images"].get_frame(frame_idx).to(device).float().unsqueeze(0)
             backbone_out = self.forward_image(image)
             # Cache the most recent frame's feature
             inference_state["cached_features"].put(frame_idx, (image, backbone_out))
