@@ -95,10 +95,8 @@ if __name__ == '__main__':
     # Output path for results and backup
     output_bin = pathlib.Path(f"//et-nas.humlab.lu.se/FLEX/datasets synthetic/nvidia/sam2/{this_dataset}/{from_sample}/") # will contain saved masks
     backup_bin = output_bin / 'backup'
-    if not output_bin.is_dir():
-        output_bin.mkdir()
-    if not backup_bin.is_dir():
-        backup_bin.mkdir()
+    output_bin.mkdir(parents=True, exist_ok=True)
+    backup_bin.mkdir(parents=True, exist_ok=True)
 
     # Path containing the videos (zip files or subdirectory of videos)
     root_dir = r"D:/nvgaze" #TODO
@@ -132,8 +130,7 @@ if __name__ == '__main__':
         try:
             this_output_path = output_bin / video_dir.parent.name
             print(f"############## {this_output_path} ##############")
-            if not this_output_path.is_dir():
-                this_output_path.mkdir()
+            this_output_path.mkdir(parents=True, exist_ok=True)
 
             savepath_videosegs = this_output_path / 'segments_0.pickle.gz'
             if os.path.exists(savepath_videosegs):
