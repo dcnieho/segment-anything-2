@@ -4,6 +4,7 @@ import numpy as np
 import torch
 import pickle
 import compress_pickle
+import pandas as pd
 import pathlib
 from PIL import Image
 import traceback
@@ -76,16 +77,31 @@ def add_pupil_prompt(predictor, inference_state, prompts, ann_frame_index=0):
         box=box
     )
 
-
-with open('giw_all_prompts.pkl', 'rb') as handle: #TODO
-    subject_prompts = pickle.load(handle)
-
-def retrieve_prompt_from_subject(subject, chunk_idx):
+def retrieve_prompt_from_subject(video_path, gt_dir):
     # get specific subject prompt from video_dir
-    subject = os.path.splitext(os.path.basename(subject))[0]
-    print(f'Retrieving prompts from subject {subject}')
+    gt_file = gt_dir / f'{video_path.name}pupil_eli.txt'
+    gt = pd.read_csv(gt_file, sep=';')
 
-    return subject_prompts[f'{subject}'][chunk_idx]
+    return {
+        'prompt': {
+            'pupil': {
+                'points': np.array([[gt['CENTER X'].iloc[0], gt['CENTER Y'].iloc[0]]]),
+                'labels': np.array([1]),
+                'box': None
+            },
+            'iris': {
+                'points': None,
+                'labels': None,
+                'box': None
+            },
+            'sclera': {
+                'points': None,
+                'labels': None,
+                'box': None
+            }
+        },
+        'frame': gt['FRAME'].iloc[0]-1  # TEyeDS frame numbers are 1-based, we use zero-based
+    }
 
 
 if __name__ == '__main__':
@@ -137,7 +153,7 @@ if __name__ == '__main__':
                 print(f"Already done. Skipping {video_dir}")
                 continue
 
-            this_prompt = retrieve_prompt_from_subject(video_dir, 0)[0]
+            this_prompt = retrieve_prompt_from_subject(video_dir, gt_dir)
             frame_idx = this_prompt['frame']
 
             inference_state = predictor.init_state(video_path=str(video_dir)
