@@ -89,7 +89,7 @@ def retrieve_prompt_from_subject(subject, chunk_idx):
 
 
 if __name__ == '__main__':
-    from_sample = 'persubject_run2'
+    from_sample = 'persubject_run'
     this_dataset = 'giw'
 
     # Output path for results and backup
@@ -99,10 +99,10 @@ if __name__ == '__main__':
     backup_bin.mkdir(parents=True, exist_ok=True)
 
     # Path containing the videos (zip files or subdirectory of videos)
-    root_dir = r"D:/nvgaze" #TODO
-    # root_dir = r"D:/datasets/giw_processed"
+    root_dir = pathlib.Path(r"D:\GIW\TEyeDS\processed")
+    gt_dir   = pathlib.Path(r"D:\GIW\TEyeDS\ANNOTATIONS")
 
-    subject_folders = list(pathlib.Path(root_dir).rglob("*.mp4"))
+    subject_folders = list(root_dir.rglob("*.mp4"))
     subject_folders = natsort.natsorted(subject_folders)
 
     # Set up logging to file and console
@@ -128,7 +128,7 @@ if __name__ == '__main__':
     image_feature_cache_size = 100
     for video_dir in subject_folders:
         try:
-            this_output_path = output_bin / video_dir.parent.name
+            this_output_path = output_bin / video_dir.name
             print(f"############## {this_output_path} ##############")
             this_output_path.mkdir(parents=True, exist_ok=True)
 
