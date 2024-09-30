@@ -5,6 +5,7 @@ import os
 import zipfile
 import pathlib
 import natsort
+from tqdm import tqdm
 from PIL import Image
 
 
@@ -50,7 +51,7 @@ def evaluate_segments(preds_path, labels_zip, save_csv_dir=None):
         segments = compress_pickle.load(handle)
 
     all_scores = []
-    for idx in segments:
+    for idx in tqdm(segments, desc="frames"):
         mask_pred = segments[idx][0].squeeze() > 0.5
 
         with labels_zip.open(f"type_maskWithoutSkin_frame_{(idx):04d}.png")  as eyeball_file:
@@ -109,14 +110,14 @@ if __name__ == "__main__":
 
     for zip_path in subject_folders:
         print(f'=== {zip_path.parent.name} ===')
-        out_dir = base_path / zip_path.parent.name
+        out_dir = base_path.parent / 'eval2'
         result_files = out_dir.glob("*.pickle.gz")
         with zipfile.ZipFile(zip_path, 'r') as zipf:
-            for res_file in result_files:
+            for res_file in tqdm(result_files, desc="chunks"):
                 chunk_scores = evaluate_segments(res_file, zipf, save_csv_dir=out_dir)
                 score = summarize_scores(chunk_scores)
-                print(f'pupil lost rate: {score['pupil_lost_rate']:.3f}, blink correctly detected: {score['blink_detected_rate']:.3f}, mIoU (for tracked cases): {score['miou_not_lost']:.3f}')
+                print(f'pupil lost rate: {score["pupil_lost_rate"]:.3f}, blink correctly detected: {"None" if score["blink_detected_rate"] is None else score["blink_detected_rate"]:.3f}, mIoU (for tracked cases): {score["miou_not_lost"]:.3f}')
         scores = pd.read_csv(out_dir / f'scores.csv')
         score = summarize_scores(chunk_scores)
         print('--total--')
-        print(f'pupil lost rate: {score['pupil_lost_rate']:.3f}, blink correctly detected: {score['blink_detected_rate']:.3f}, mIoU (for tracked cases): {score['miou_not_lost']:.3f}')
+        print(f'pupil lost rate: {score["pupil_lost_rate"]:.3f}, blink correctly detected: {"None" if score["blink_detected_rate"] is None else score["blink_detected_rate"]:.3f}, mIoU (for tracked cases): {score["miou_not_lost"]:.3f}')
