@@ -45,7 +45,7 @@ def get_scores(pred_mask, true_mask):
     return scores
 
 
-def evaluate_segments(preds_path, labels_zip, save_csv_dir=None):
+def evaluate_segments(preds_path, labels_zip, save_csv_dir=None, save_csv_fname=None):
 
     with open(preds_path, 'rb') as handle:
         segments = compress_pickle.load(handle)
@@ -77,7 +77,7 @@ def evaluate_segments(preds_path, labels_zip, save_csv_dir=None):
     all_scores = pd.DataFrame.from_dict({i:s for i,s in enumerate(all_scores)}, orient='index')
 
     if save_csv_dir:
-        savepath = save_csv_dir / f'scores.csv'
+        savepath = save_csv_dir / save_csv_fname
         all_scores.to_csv(savepath, index=False, na_rep='nan', float_format="%.8f", mode='a', header=not savepath.is_file())
 
     return all_scores
@@ -110,14 +110,17 @@ if __name__ == "__main__":
 
     for zip_path in subject_folders:
         print(f'=== {zip_path.parent.name} ===')
+        in_dir = base_path / zip_path.parent.name
         out_dir = base_path.parent / 'eval2'
-        result_files = out_dir.glob("*.pickle.gz")
+        result_files = in_dir.glob("*.pickle.gz")
         with zipfile.ZipFile(zip_path, 'r') as zipf:
-            for res_file in tqdm(result_files, desc="chunks"):
-                chunk_scores = evaluate_segments(res_file, zipf, save_csv_dir=out_dir)
+            for res_file in result_files:
+                chunk_scores = evaluate_segments(res_file, zipf, save_csv_dir=out_dir, save_csv_fname=f'{zip_path.parent.name}.csv')
                 score = summarize_scores(chunk_scores)
-                print(f'pupil lost rate: {score["pupil_lost_rate"]:.3f}, blink correctly detected: {"None" if score["blink_detected_rate"] is None else score["blink_detected_rate"]:.3f}, mIoU (for tracked cases): {score["miou_not_lost"]:.3f}')
-        scores = pd.read_csv(out_dir / f'scores.csv')
+                bdr = "None" if score["blink_detected_rate"] is None else f'{score["blink_detected_rate"]:.3f}'
+                print(f'pupil lost rate: {score["pupil_lost_rate"]:.3f}, blink correctly detected: {bdr}, mIoU (for tracked cases): {score["miou_not_lost"]:.3f}')
+        scores = pd.read_csv(out_dir / f'{zip_path.parent.name}.csv')
         score = summarize_scores(chunk_scores)
         print('--total--')
-        print(f'pupil lost rate: {score["pupil_lost_rate"]:.3f}, blink correctly detected: {"None" if score["blink_detected_rate"] is None else score["blink_detected_rate"]:.3f}, mIoU (for tracked cases): {score["miou_not_lost"]:.3f}')
+        bdr = "None" if score["blink_detected_rate"] is None else f'{score["blink_detected_rate"]:.3f}'
+        print(f'pupil lost rate: {score["pupil_lost_rate"]:.3f}, blink correctly detected: {bdr}, mIoU (for tracked cases): {score["miou_not_lost"]:.3f}')
