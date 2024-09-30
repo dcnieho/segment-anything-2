@@ -145,8 +145,7 @@ if __name__ == '__main__':
                                                 , offload_state_to_cpu=offload_to_cpu
                                                 , async_loading_frames=True
                                                 , image_cache_size=cache_size
-                                                , image_feature_cache_size=image_feature_cache_size
-                                                , img_fname_contains='type_img_frame')
+                                                , image_feature_cache_size=image_feature_cache_size)
 
             add_pupil_prompt(predictor, inference_state, this_prompt['prompt'], ann_frame_index=frame_idx)
 
