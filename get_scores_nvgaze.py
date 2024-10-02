@@ -112,6 +112,10 @@ if __name__ == "__main__":
         print(f'=== {zip_path.parent.name} ===')
         in_dir = base_path / zip_path.parent.name
         out_dir = base_path.parent / 'eval2'
+
+        if (out_dir / f'{zip_path.parent.name}.csv').is_file():
+            continue
+
         result_files = in_dir.glob("*.pickle.gz")
         with zipfile.ZipFile(zip_path, 'r') as zipf:
             for res_file in result_files:
