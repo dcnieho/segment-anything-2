@@ -36,11 +36,13 @@ if device.type == "cuda":
 def propagate(predictor, inference_state, chunk_size, save_path=None, prompt=None):
     # run propagation throughout the video and collect the results in a dict
     video_segments = {}  # video_segments contains the per-frame segmentation results
-    i = 0
+    if prompt['frame']>0:
+        # first do a reverse pass from the prompted frame
+        for out_frame_idx, out_obj_ids, out_mask_logits in predictor.propagate_in_video(inference_state, reverse=True):
+            video_segments[out_frame_idx] = {out_obj_id: (out_mask_logits[i] > 0.0).cpu().numpy() for i, out_obj_id in enumerate(out_obj_ids)}
     for out_frame_idx, out_obj_ids, out_mask_logits in predictor.propagate_in_video(inference_state):
-        i += 1
         video_segments[out_frame_idx] = {out_obj_id: (out_mask_logits[i] > 0.0).cpu().numpy() for i, out_obj_id in enumerate(out_obj_ids)}
-        if prompt is not None and i==prompt['frame'] and save_path:
+        if prompt is not None and out_frame_idx==prompt['frame'] and save_path:
             img = inference_state["images"].get_frame(out_frame_idx)
             img = img.permute(1,2,0).numpy()
             img_min, img_max = img.min(), img.max()
@@ -57,7 +59,7 @@ def propagate(predictor, inference_state, chunk_size, save_path=None, prompt=Non
                 p=[int(x) for x in prompt['prompt']['pupil']['points'].flatten()]
                 img = cv2.circle(img, (p[0], p[1]), 1, (255, 0, 0), 3)
             Image.fromarray(img).save(pathlib.Path(save_path) / f'frame{out_frame_idx}_mask.png')
-        if i%chunk_size == 0:
+        if out_frame_idx%chunk_size == 0:
             yield video_segments
             video_segments.clear()
     return video_segments
