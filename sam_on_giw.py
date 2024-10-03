@@ -40,7 +40,7 @@ def propagate(predictor, inference_state, chunk_size, save_path=None, prompt=Non
     for out_frame_idx, out_obj_ids, out_mask_logits in predictor.propagate_in_video(inference_state):
         i += 1
         video_segments[out_frame_idx] = {out_obj_id: (out_mask_logits[i] > 0.0).cpu().numpy() for i, out_obj_id in enumerate(out_obj_ids)}
-        if i==1 and save_path:
+        if prompt is not None and i==prompt['frame'] and save_path:
             img = inference_state["images"].get_frame(out_frame_idx)
             img = img.permute(1,2,0).numpy()
             img_min, img_max = img.min(), img.max()
@@ -54,7 +54,7 @@ def propagate(predictor, inference_state, chunk_size, save_path=None, prompt=Non
             blueMask = cv2.bitwise_and(blueImg, blueImg, mask=np.uint8(video_segments[out_frame_idx][0].squeeze() > 0.5))
             img = cv2.addWeighted(blueMask, .6, img, .4, 0)
             if prompt is not None:
-                p=[int(x) for x in prompt['pupil']['points'].flatten()]
+                p=[int(x) for x in prompt['prompt']['pupil']['points'].flatten()]
                 img = cv2.circle(img, (p[0], p[1]), 1, (255, 0, 0), 3)
             Image.fromarray(img).save(pathlib.Path(save_path) / f'frame{out_frame_idx}_mask.png')
         if i%chunk_size == 0:
@@ -81,11 +81,22 @@ def retrieve_prompt_from_subject(video_path, gt_dir):
     # get specific subject prompt from video_dir
     gt_file = gt_dir / f'{video_path.name}pupil_eli.txt'
     gt = pd.read_csv(gt_file, sep=';')
+    valid = gt['CENTER X'] != -1
+    if valid.iloc[0]:
+        fr_idx = 0
+    else:
+        # find first run of valid values that is long enough
+        a = (valid.diff(1) != 0).astype('int').cumsum()
+        a[~valid] = -1
+        b = a.groupby(a).size()
+        long_enough = np.where(np.logical_and(b>10,b.index!=-1))[0][0]
+        fr_idxs = np.where(a==b.index[long_enough])[0]
+        fr_idx = fr_idxs[4] # take a few frames in
 
     return {
         'prompt': {
             'pupil': {
-                'points': np.array([[gt['CENTER X'].iloc[0], gt['CENTER Y'].iloc[0]]]),
+                'points': np.array([[gt['CENTER X'].iloc[fr_idx], gt['CENTER Y'].iloc[fr_idx]]]),
                 'labels': np.array([1]),
                 'box': None
             },
@@ -100,7 +111,7 @@ def retrieve_prompt_from_subject(video_path, gt_dir):
                 'box': None
             }
         },
-        'frame': gt['FRAME'].iloc[0]-1  # TEyeDS frame numbers are 1-based, we use zero-based
+        'frame': gt['FRAME'].iloc[fr_idx]-1  # TEyeDS frame numbers are 1-based, we use zero-based
     }
 
 
@@ -165,7 +176,7 @@ if __name__ == '__main__':
 
             add_pupil_prompt(predictor, inference_state, this_prompt['prompt'], ann_frame_index=frame_idx)
 
-            for i,video_segments in enumerate(propagate(predictor, inference_state, chunk_size, this_output_path, this_prompt['prompt'])):
+            for i,video_segments in enumerate(propagate(predictor, inference_state, chunk_size, this_output_path, this_prompt)):
                 savepath_videosegs = this_output_path / f'segments_{i}.pickle.gz'
                 with open(savepath_videosegs, 'wb') as handle:
                     compress_pickle.dump(video_segments, handle, pickler_kwargs={'protocol': pickle.HIGHEST_PROTOCOL})
