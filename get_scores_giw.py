@@ -115,6 +115,10 @@ def process(video):
     in_gt  = gt_dir / f'{video.name}pupil_seg_2D.mp4'
     out_dir = base_path.parent / 'eval'
 
+    if (out_dir/f'{video.name}.csv').is_file():
+        print(f"Already done. Skipping {video.name}")
+        return
+
     result_files = in_dir.glob("*.pickle.gz")
     result_files = natsort.natsorted(result_files)
     scores = evaluate_segments(video.name, result_files, in_gt, save_csv_dir=out_dir, save_csv_fname=f'{video.name}.csv')
