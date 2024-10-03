@@ -59,7 +59,7 @@ def propagate(predictor, inference_state, chunk_size, save_path=None, prompt=Non
                 p=[int(x) for x in prompt['prompt']['pupil']['points'].flatten()]
                 img = cv2.circle(img, (p[0], p[1]), 1, (255, 0, 0), 3)
             Image.fromarray(img).save(pathlib.Path(save_path) / f'frame{out_frame_idx}_mask.png')
-        if out_frame_idx%chunk_size == 0:
+        if out_frame_idx>0 and out_frame_idx%chunk_size == 0:
             yield video_segments
             video_segments.clear()
     yield video_segments
@@ -120,13 +120,12 @@ def retrieve_prompt_from_subject(video_path, gt_dir, frame_idx_override):
 
 
 if __name__ == '__main__':
-    from_sample = 'persubject_run'
-    this_dataset = 'giw'
+    from_sample = 'persubject_run2'
 
     prompt_frame_hardcode = {'GW_5_7.mp4':10, 'GW_6_6.mp4':12}
 
     # Output path for results and backup
-    output_bin = pathlib.Path(f"//et-nas.humlab.lu.se/FLEX/datasets synthetic/nvidia/sam2/{this_dataset}/{from_sample}/") # will contain saved masks
+    output_bin = pathlib.Path(f"//et-nas.humlab.lu.se/FLEX/datasets real/GIW/sam2/{from_sample}/") # will contain saved masks
     backup_bin = output_bin / 'backup'
     output_bin.mkdir(parents=True, exist_ok=True)
     backup_bin.mkdir(parents=True, exist_ok=True)
