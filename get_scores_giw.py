@@ -109,11 +109,11 @@ def summarize_scores(all_scores):
 
 root_dir = pathlib.Path(r"D:\GIW\TEyeDS\processed")
 gt_dir   = pathlib.Path(r"D:\GIW\TEyeDS\ANNOTATIONS")
-base_path = pathlib.Path(f"//et-nas.humlab.lu.se/FLEX/datasets synthetic/nvidia/sam2/giw/persubject_run/")
+base_path = pathlib.Path(f"//et-nas.humlab.lu.se/FLEX/datasets real/GIW/sam2/persubject_run2/")
 def process(video):
     in_dir = base_path / video.name
     in_gt  = gt_dir / f'{video.name}pupil_seg_2D.mp4'
-    out_dir = base_path.parent / 'eval'
+    out_dir = base_path.parent / 'eval2'
 
     if (out_dir/f'{video.name}.csv').is_file():
         print(f"Already done. Skipping {video.name}")
