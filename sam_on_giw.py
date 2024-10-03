@@ -77,12 +77,14 @@ def add_pupil_prompt(predictor, inference_state, prompts, ann_frame_index=0):
         box=box
     )
 
-def retrieve_prompt_from_subject(video_path, gt_dir):
+def retrieve_prompt_from_subject(video_path, gt_dir, frame_idx_override):
     # get specific subject prompt from video_dir
     gt_file = gt_dir / f'{video_path.name}pupil_eli.txt'
     gt = pd.read_csv(gt_file, sep=';')
     valid = gt['CENTER X'] != -1
-    if valid.iloc[0]:
+    if frame_idx_override is not None:
+        fr_idx = frame_idx_override
+    elif valid.iloc[0]:
         fr_idx = 0
     else:
         # find first run of valid values that is long enough
@@ -118,6 +120,8 @@ def retrieve_prompt_from_subject(video_path, gt_dir):
 if __name__ == '__main__':
     from_sample = 'persubject_run'
     this_dataset = 'giw'
+
+    prompt_frame_hardcode = {'GW_5_7.mp4':10, 'GW_6_6.mp4':12}
 
     # Output path for results and backup
     output_bin = pathlib.Path(f"//et-nas.humlab.lu.se/FLEX/datasets synthetic/nvidia/sam2/{this_dataset}/{from_sample}/") # will contain saved masks
@@ -164,7 +168,7 @@ if __name__ == '__main__':
                 print(f"Already done. Skipping {video_dir}")
                 continue
 
-            this_prompt = retrieve_prompt_from_subject(video_dir, gt_dir)
+            this_prompt = retrieve_prompt_from_subject(video_dir, gt_dir, prompt_frame_hardcode.get(video_dir.name,None))
             frame_idx = this_prompt['frame']
 
             inference_state = predictor.init_state(video_path=str(video_dir)
