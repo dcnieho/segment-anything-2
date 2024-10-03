@@ -62,7 +62,7 @@ def propagate(predictor, inference_state, chunk_size, save_path=None, prompt=Non
         if out_frame_idx%chunk_size == 0:
             yield video_segments
             video_segments.clear()
-    return video_segments
+    yield video_segments
 
 def add_pupil_prompt(predictor, inference_state, prompts, ann_frame_index=0):
     ann_obj_id = 0  # give a unique id to each object we interact with (it can be any integers)
