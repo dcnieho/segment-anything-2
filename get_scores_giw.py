@@ -33,11 +33,6 @@ def get_scores(pred_mask, true_mask):
     return scores
 
 
-def get_chunkIdx_from_picklepath(picklepath):
-    id = picklepath.split('.')[0].split('_')[-1]
-    return id
-
-
 def evaluate_segments(subject, preds_paths, gt_video, save_csv_dir=None, save_csv_fname=None):
 
     cap = cv2.VideoCapture(gt_video)
