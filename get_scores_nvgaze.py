@@ -1,7 +1,6 @@
 import pandas as pd
 import compress_pickle
 import numpy as np
-import os
 import zipfile
 import pathlib
 import natsort
@@ -9,15 +8,6 @@ from tqdm import tqdm
 from PIL import Image
 
 
-
-
-def get_pickle_path(zip_path, chunk_id):
-    return base_path / zip_path.parent.name / f'segments_{chunk_id}.pickle.gz'
-
-def get_chunkIdx_from_picklepath(picklepath):
-    # naming convention segments_{chunk_idx}.pickle
-    filename = os.path.splitext(os.path.basename(picklepath))[0]
-    return filename.split('_')[-1]
 
 def get_scores(pred_mask, true_mask):
     blink_tracked = np.nan
