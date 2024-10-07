@@ -37,6 +37,11 @@ if device.type == "cuda":
 def propagate(predictor, inference_state, chunk_size, save_path=None, prompt=None):
     # run propagation throughout the video and collect the results in a dict
     video_segments = {}  # video_segments contains the per-frame segmentation results
+    if prompt['frame']>0:
+        # first do a reverse pass from the prompted frame
+        for out_frame_idx, out_obj_ids, out_mask_logits in predictor.propagate_in_video(inference_state, reverse=True):
+            video_segments[out_frame_idx] = {out_obj_id: (out_mask_logits[i] > 0.0).cpu().numpy() for i, out_obj_id in enumerate(out_obj_ids)}
+            video_segments[out_frame_idx]['image_file'] = inference_state['images'].img_paths[out_frame_idx]
     for out_frame_idx, out_obj_ids, out_mask_logits in predictor.propagate_in_video(inference_state):
         video_segments[out_frame_idx] = {out_obj_id: (out_mask_logits[i] > 0.0).cpu().numpy() for i, out_obj_id in enumerate(out_obj_ids)}
         video_segments[out_frame_idx]['image_file'] = inference_state['images'].img_paths[out_frame_idx]
@@ -77,8 +82,11 @@ def add_pupil_prompt(predictor, inference_state, prompts, ann_frame_index=0):
         box=box
     )
 
-def retrieve_prompt_from_subject(file_name, gt):
-    i = np.where(gt['file']==file_name)[0]
+def retrieve_prompt_from_subject(file_names, gt):
+    for fr,file in enumerate(file_names):
+        if any(b:=gt['file']==file):
+            i = np.where(b)[0]
+            break
 
     return {
         'prompt': {
@@ -98,7 +106,7 @@ def retrieve_prompt_from_subject(file_name, gt):
                 'box': None
             }
         },
-        'frame': 0
+        'frame': fr
     }
 
 
@@ -156,8 +164,8 @@ if __name__ == '__main__':
                                                 , image_cache_size=cache_size
                                                 , image_feature_cache_size=image_feature_cache_size)
 
-            frame_idx = 0 # always first frame of sequence
-            this_prompt = retrieve_prompt_from_subject(inference_state['images'].img_paths[0], gt)
+            this_prompt = retrieve_prompt_from_subject(inference_state['images'].img_paths, gt)
+            frame_idx = this_prompt['frame']
 
             add_pupil_prompt(predictor, inference_state, this_prompt['prompt'], ann_frame_index=frame_idx)
 
