@@ -76,7 +76,7 @@ def evaluate_segments(subject, preds_paths, gt_video, save_csv_dir=None, save_cs
 
     if save_csv_dir:
         savepath = save_csv_dir / save_csv_fname
-        all_scores.to_csv(savepath, index=False, na_rep='nan', float_format="%.8f", mode='a', header=not savepath.is_file())
+        all_scores.to_csv(savepath, index=False, na_rep='nan', float_format="%.8f")
 
     return all_scores 
 
