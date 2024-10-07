@@ -42,7 +42,7 @@ def propagate(predictor, inference_state, chunk_size, save_path=None, prompt=Non
         video_segments[out_frame_idx]['image_file'] = inference_state['images'].img_paths[out_frame_idx]
         if prompt is not None and out_frame_idx==prompt['frame'] and save_path:
             img = inference_state["images"].get_frame(out_frame_idx)
-            img = img.permute(1,2,0).numpy()
+            img = img.permute(1,2,0).cpu().numpy()
             img_min, img_max = img.min(), img.max()
             img = (img-img_min)/(img_max-img_min)
             img = Image.fromarray(np.uint8(img*255)).resize((inference_state["images"].video_width, inference_state["images"].video_height))
