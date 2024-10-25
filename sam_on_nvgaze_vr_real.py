@@ -81,7 +81,7 @@ def add_pupil_prompt(predictor, inference_state, prompts, ann_frame_index=0):
 
 def retrieve_prompt_from_subject(video_path, gt_dir, frame_idx_override):
     # get specific subject prompt from video_dir
-    gt_file = gt_dir / f'NVIDIAVR_{video_path.name.strip("0")}_1.mp4pupil_eli.txt'
+    gt_file = gt_dir / f'NVIDIAVR_{video_path.stem.lstrip("0")}_1.mp4pupil_eli.txt'
     gt = pd.read_csv(gt_file, sep=';')
     valid = gt['CENTER X'] != -1
     if frame_idx_override is not None:
@@ -160,7 +160,7 @@ if __name__ == '__main__':
     image_feature_cache_size = 100
     for video_dir in subject_folders:
         try:
-            this_output_path = output_bin / video_dir.name
+            this_output_path = output_bin / video_dir.stem
             print(f"############## {this_output_path} ##############")
             this_output_path.mkdir(parents=True, exist_ok=True)
 
@@ -169,7 +169,7 @@ if __name__ == '__main__':
                 print(f"Already done. Skipping {video_dir}")
                 continue
 
-            this_prompt = retrieve_prompt_from_subject(video_dir, gt_dir, prompt_frame_hardcode.get(video_dir.name,None))
+            this_prompt = retrieve_prompt_from_subject(video_dir, gt_dir, prompt_frame_hardcode.get(video_dir.stem,None))
             frame_idx = this_prompt['frame']
 
             inference_state = predictor.init_state(video_path=str(video_dir)
