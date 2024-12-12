@@ -104,25 +104,26 @@ def load_prompts_from_folder(folder: pathlib.Path, N: int):
                 added_negative_prompt_for_pupil = True
             prompts[file].append([obj_id, label, point_coord])
         # add pupil and CR as negative prompts for iris
-        # for p in prompts[file]:
-        #     if p[0]<2 and p[1]==1:
-        #         prompts[file].append([2, 0, p[2]])
+        for p in prompts[file]:
+            if p[0]<2 and p[1]==1:
+                prompts[file].append([2, 0, p[2]])
     return prompts
 
 
 if __name__ == '__main__':
-    video_base   = pathlib.Path(r"C:\dat\projects\SAM2\data\datasets")
-    prompts_base = pathlib.Path(r"C:\dat\projects\SAM2\data\prompts")
-    output_base  = pathlib.Path(r"C:\dat\projects\SAM2\output")
+    video_base   = pathlib.Path(r"D:\datasets")
+    prompts_base = pathlib.Path(r"D:\prompts")
+    output_base  = pathlib.Path(r"D:\output")
     dataset = '2023-04-25_1000Hz_100_EL'
     N_prompts = 1
+    model = ('l','large') # ('t','tiny')
 
     # Path containing the videos (zip files or subdirectory of videos)
     input_dir = video_base / dataset
-    subject_folders = [pathlib.Path(f.path) for f in os.scandir(input_dir) if f.is_dir()]
+    subject_folders = [pathlib.Path(f.path) for f in os.scandir(input_dir) if f.is_dir() and not 'eyelink' in (p:=pathlib.Path(f.path)).stem]
     subject_folders = natsort.natsorted(subject_folders)
 
-    predictor = build_sam2_video_predictor("configs/sam2.1/sam2.1_hiera_t.yaml", r"C:\dat\projects\SAM2\segment-anything-2\checkpoints\sam2.1_hiera_tiny.pt", device=device)
+    predictor = build_sam2_video_predictor(f"configs/sam2.1/sam2.1_hiera_{model[0]}.yaml", f"checkpoints/sam2.1_hiera_{model[1]}.pt", device=device)
     offload_to_cpu = False
     chunk_size = 10000  # store to file once this many frames are processed
     cache_size = 200    # maximum number of input images to keep in memory
@@ -133,7 +134,7 @@ if __name__ == '__main__':
         video_files = natsort.natsorted(video_files)
         for video_file in video_files:
             try:
-                this_output_path = output_base / f'{N_prompts}_prompt_frames' / dataset / subject.name / video_file.stem
+                this_output_path = output_base / f'{N_prompts}_prompt_frames' / model[1] / dataset / subject.name / video_file.stem
                 print(f"############## {this_output_path} ##############")
                 this_output_path.mkdir(parents=True, exist_ok=True)
 
