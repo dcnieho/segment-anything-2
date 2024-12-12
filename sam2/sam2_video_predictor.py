@@ -7,6 +7,7 @@
 import warnings
 from collections import OrderedDict
 import torch
+import numpy as np
 
 from tqdm import tqdm
 
@@ -50,10 +51,10 @@ class SAM2VideoPredictor(SAM2Base):
         video_path,
         offload_video_to_cpu=False,
         offload_state_to_cpu=False,
-        async_loading_frames=False,
         image_cache_size=100,  # Adjust cache size as needed
         image_feature_cache_size=10,  # Adjust cache size as needed
-        img_fname_contains=None
+        img_fname_contains=None,
+        separate_prompts=None
     ):
         """Initialize an inference state."""
         compute_device = self.device  # device of the model
@@ -64,7 +65,8 @@ class SAM2VideoPredictor(SAM2Base):
             offload_video_to_cpu=offload_video_to_cpu,
             cache_size=image_cache_size,
             compute_device=compute_device,
-            img_fname_contains=img_fname_contains
+            img_fname_contains=img_fname_contains,
+            separate_prompts=separate_prompts
         )
         # Initialize inference_state and store the frame loader
         inference_state = {}
@@ -118,6 +120,22 @@ class SAM2VideoPredictor(SAM2Base):
         inference_state["frames_already_tracked"] = {}
         # Warm up the visual backbone and cache the image feature on frame 0
         self._get_image_feature(inference_state, frame_idx=0, batch_size=1)
+
+        # if we have prompts, apply them
+        if separate_prompts is not None:
+            # dict with key filename, containing a list of prompts: [obj_id, label, point_coord]
+            for idx,f_name in enumerate(separate_prompts):
+                prompts = separate_prompts[f_name]
+                for p in prompts:
+                    ann_obj_id = p[0]  # give a unique id to each object we interact with (it can be any integers)
+                    self.add_new_points_or_box(
+                        inference_state=inference_state,
+                        frame_idx=idx,
+                        obj_id=ann_obj_id,
+                        points = np.array(p[2]).reshape(-1,2),
+                        labels = np.array([p[1]]),  # 1 is positive click, 0 is negative click
+                        clear_old_points=False
+                    )
         return inference_state
 
     @classmethod

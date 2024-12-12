@@ -134,6 +134,7 @@ class VideoFrameLoader:
         image_size,
         img_mean,
         img_std,
+        extra_frames,
         offload_to_cpu,
         compute_device,
         cache_size=100,
@@ -142,7 +143,13 @@ class VideoFrameLoader:
         Initialize the video frame loader with image paths or zip file, image size, mean, std, and caching options.
         """
         self.src_type, img_paths = img_paths
-        self.img_paths = img_paths
+        self._img_paths = img_paths
+        # caller-facing img_paths
+        img_paths = [img_paths] if not isinstance(img_paths,list) else img_paths
+        if extra_frames is not None:
+            self.img_paths = extra_frames+img_paths
+        else:
+            self.img_paths = img_paths
         # output size
         self.image_size = image_size
         # input size
@@ -154,6 +161,8 @@ class VideoFrameLoader:
         self.device = compute_device
         self.cache_size = cache_size
 
+        self.extra_frames = extra_frames
+
         self.num_frames = None
         self.zip_file = None
         self.video_stream = None
@@ -161,7 +170,7 @@ class VideoFrameLoader:
         self.video_fps = None
         self.video_frame_index = None
         if self.src_type=='video':
-            self.video_stream = VideoReader(self.img_paths, stream="video")
+            self.video_stream = VideoReader(self._img_paths, stream="video")
             self.video_data = self.video_stream.get_metadata()['video']
             if "fps" in self.video_data:
                 self.video_fps = self.video_data['fps'][0]
@@ -177,9 +186,9 @@ class VideoFrameLoader:
             ]
         else:
             if self.src_type=='zip':
-                self.zip_file_path, self.img_paths = self.img_paths
+                self.zip_file_path, self._img_paths = self._img_paths
                 self.zip_file = zipfile.ZipFile(self.zip_file_path, 'r')
-            self.num_frames = len(self.img_paths)
+            self.num_frames = len(self._img_paths)
             tforms = [
                 transforms.Resize((image_size, image_size)),
                 transforms.ToTensor(),  # NB: this divides by 255 also
@@ -189,13 +198,31 @@ class VideoFrameLoader:
         # Initialize image transformations
         self.transform = transforms.Compose(tforms)
 
+        if self.extra_frames is not None:
+            self.num_extra_frames = len(self.extra_frames)
+            self.num_frames += self.num_extra_frames
+            self.transform_extra = transforms.Compose([
+                transforms.Resize((image_size, image_size)),
+                transforms.ToTensor(),  # NB: this divides by 255 also
+                transforms.Normalize(mean=img_mean, std=img_std),
+            ])
+
+
         # Create an LRU cache for frames
         self.frame_cache = LRUCache(capacity=self.cache_size)
         # load first frame. Also sets video dimensions
-        self._load_frame(0)
+        self.get_frame(0)
 
     def _load_frame(self, idx):
         """Internal method to load and preprocess a frame."""
+        if self.extra_frames is not None:
+            if idx<self.num_extra_frames:
+                img = Image.open(self.extra_frames[idx]).convert("RGB")
+                self.video_width  = img.width
+                self.video_height = img.height
+                return self.transform_extra(img)
+            else:
+                idx = idx-self.num_extra_frames
         if self.video_stream is not None:
             if self.video_frame_index + 1 == idx:
                 img_dict = self.video_stream.__next__()
@@ -212,10 +239,10 @@ class VideoFrameLoader:
         else:
             if self.zip_file is not None:
                 # Handle zip file case
-                with self.zip_file.open(self.img_paths[idx]) as img_file:
+                with self.zip_file.open(self._img_paths[idx]) as img_file:
                     img = Image.open(img_file).convert("RGB")
             else:
-                img = Image.open(self.img_paths[idx]).convert("RGB")
+                img = Image.open(self._img_paths[idx]).convert("RGB")
             self.video_width  = img.width
             self.video_height = img.height
 
@@ -246,6 +273,7 @@ def load_video_frames_with_cache(
     image_size,
     offload_video_to_cpu,
     img_fname_contains=None,    # str that filenames are filtered on
+    separate_prompts=None,
     cache_size=100,
     img_mean=(0.485, 0.456, 0.406),
     img_std=(0.229, 0.224, 0.225),
@@ -298,6 +326,11 @@ def load_video_frames_with_cache(
         if num_frames == 0:
             raise RuntimeError(f"No images found in {video_path}")
 
+    # if we have extra frames for prompts, set up loading for those too
+    extra_frames = None
+    if separate_prompts is not None:
+        extra_frames = [fr for fr in separate_prompts]
+
     # Initialize VideoFrameLoader with LRU cache
     img_paths = (src_type,img_paths)
     frame_loader = VideoFrameLoader(
@@ -305,6 +338,7 @@ def load_video_frames_with_cache(
         image_size=image_size,
         img_mean=img_mean,
         img_std=img_std,
+        extra_frames=extra_frames,
         offload_to_cpu=offload_video_to_cpu,
         compute_device=compute_device,
         cache_size=cache_size,  # Set the cache size dynamically
