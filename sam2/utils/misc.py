@@ -176,7 +176,10 @@ class VideoFrameLoader:
                 self.video_fps = self.video_data['fps'][0]
             else:
                 self.video_fps = self.video_data["framerate"][0]
-            self.num_frames = int(self.video_data['duration'][0] * self.video_fps)
+            try:
+                self.num_frames = self.video_stream.container.streams.video[0].frames
+            except:
+                self.num_frames = int(self.video_data['duration'][0] * self.video_fps)
 
             self.video_frame_index = -1
             tforms = [
