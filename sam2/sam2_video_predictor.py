@@ -123,19 +123,28 @@ class SAM2VideoPredictor(SAM2Base):
 
         # if we have prompts, apply them
         if separate_prompts is not None:
-            # dict with key filename, containing a list of prompts: [obj_id, label, point_coord]
+            # dict with key filename, containing per object a list of coordinates and associated labels
             for idx,f_name in enumerate(separate_prompts):
                 prompts = separate_prompts[f_name]
-                for p in prompts:
-                    ann_obj_id = p[0]  # give a unique id to each object we interact with (it can be any integers)
-                    self.add_new_points_or_box(
-                        inference_state=inference_state,
-                        frame_idx=idx,
-                        obj_id=ann_obj_id,
-                        points = np.array(p[2]).reshape(-1,2),
-                        labels = np.array([p[1]]),  # 1 is positive click, 0 is negative click
-                        clear_old_points=False
-                    )
+                for o in prompts:
+                    # self.add_new_points_or_box(
+                    #     inference_state=inference_state,
+                    #     frame_idx=idx,
+                    #     obj_id=o,
+                    #     points = np.array(prompts[o]['coords']).reshape(-1,2),
+                    #     labels = np.array(prompts[o]['labels']),  # 1 is positive click, 0 is negative click
+                    #     clear_old_points=False
+                    # )
+                    # adding prompts one at a time leads to much better results than all at once
+                    for c,l in zip(prompts[o]['coords'],prompts[o]['labels']):
+                        self.add_new_points_or_box(
+                            inference_state=inference_state,
+                            frame_idx=idx,
+                            obj_id=o,
+                            points = np.array(c).reshape(-1,2),
+                            labels = np.array([l]),  # 1 is positive click, 0 is negative click
+                            clear_old_points=False
+                        )
         return inference_state
 
     @classmethod

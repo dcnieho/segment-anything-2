@@ -64,65 +64,43 @@ def propagate(predictor, inference_state, chunk_size, save_path=None, prompts=No
                 img = cv2.add(cv2.bitwise_or(img,img,mask=cv2.bitwise_not(mask*255)), cv2.bitwise_or(img2,img2,mask=mask))
             Image.fromarray(img).save(pathlib.Path(save_path) / f'frame{out_frame_idx}_mask_all.png')
             if prompts is not None and out_frame_idx<len(prompts):
-                for pr in prompts[video_segments[out_frame_idx]['image_file']]:
-                    p = [int(x) for x in pr[2]]
-                    clr = mask_clrs[pr[0]]
-                    if pr[1]==1:
-                        img = cv2.drawMarker(img, (p[0], p[1]), clr, cv2.MARKER_CROSS, 5, 1)# img = cv2.circle(img, (p[0], p[1]), 2, clr, -1)
-                    else:
-                        img = cv2.drawMarker(img, (p[0], p[1]), clr, cv2.MARKER_SQUARE, 4, 1)
-                        #img = cv2.rectangle(img, (p[0]-1, p[1]-1), (p[0]+1, p[1]+1), clr, -1)
+                for o in prompts[video_segments[out_frame_idx]['image_file']]:
+                    pr = prompts[video_segments[out_frame_idx]['image_file']][o]
+                    clr = mask_clrs[o]
+                    for c,l in zip(pr['coords'],pr['labels']):
+                        p = [int(x) for x in c]
+                        if l==1:
+                            img = cv2.drawMarker(img, (p[0], p[1]), clr, cv2.MARKER_CROSS, 5, 1)
+                            # img = cv2.circle(img, (p[0], p[1]), 2, clr, -1)
+                        else:
+                            img = cv2.drawMarker(img, (p[0], p[1]), clr, cv2.MARKER_SQUARE, 4, 1)
+                            #img = cv2.rectangle(img, (p[0]-1, p[1]-1), (p[0]+1, p[1]+1), clr, -1)
                 Image.fromarray(img).save(pathlib.Path(save_path) / f'frame{out_frame_idx}_mask_all_prompts.png')
         if out_frame_idx>0 and out_frame_idx%chunk_size == 0:
             yield video_segments
             video_segments.clear()
     yield video_segments
 
-def load_prompts_from_folder(folder: pathlib.Path, N: int, include_sclera: bool):
+def load_prompts_from_folder(folder: pathlib.Path, N: int):
     # prompts are stored in text files, one per image load prompts for first N images (or less if there are less)
-    prompt_files = list(folder.rglob("*_prompts.txt"))
+    prompt_files = list(folder.glob("*_prompts_all.txt"))
     prompt_files = natsort.natsorted(prompt_files)
     if N is not None:
         prompt_files = prompt_files[:N]
-    # dict with key (full) filename, containing a list of prompts: [obj_id, label, point_coord]
+    # dict with key (full) filename, containing per object a list of coordinates and associated labels
     prompts: dict[pathlib.Path,list[int,int,tuple[int,int]]] = {}
     for fp in prompt_files:
         with open(fp) as f:
             reader = csv.reader(f, delimiter="\t")
             pr = list(reader)
-        file = fp.with_name('_'.join(fp.stem.split('_')[:-1])+'.png')
-        prompts[file] = []
-        added_negative_prompt_for_pupil = False
+        file = fp.with_name('_'.join(fp.stem.split('_')[:-2])+'.png')
+        prompts[file] = {0:{'coords':[], 'labels':[]}, 1:{'coords':[], 'labels':[]}, 2:{'coords':[], 'labels':[]}, 3:{'coords':[], 'labels':[]}}
         for p in pr:
-            obj_id = 0 if p[0]=='CR' else 1 if p[0]=='pupil' else 2
-            label = 1   # 1 is positive prompt, 0 negative
-            point_coord = tuple((int(x) for x in p[1:]))
-            if obj_id==2 and not added_negative_prompt_for_pupil:
-                # done with CR and pupil
-                # also add CR as negative prompt for pupil. To be safe, add it after the positive prompt
-                prompts[file].append([1, 0, prompts[file][0][2]])
-                added_negative_prompt_for_pupil = True
-            prompts[file].append([obj_id, label, point_coord])
-        # add pupil and CR as negative prompts for iris
-        for p in prompts[file]:
-            if p[0]<2 and p[1]==1:
-                prompts[file].append([2, 0, p[2]])
-
-        # deal with sclera if wanted
-        if include_sclera:
-            fp2 = fp.parent / f'{fp.stem}_sclera{fp.suffix}'
-            with open(fp2) as f:
-                reader = csv.reader(f, delimiter="\t")
-                pr = list(reader)
-            # add positive sclera prompts
-            for p in pr:
-                label = 1   # 1 is positive prompt, 0 negative
-                point_coord = tuple((int(x) for x in p[1:]))
-                prompts[file].append([3, label, point_coord])
-            # add all previous as negative prompts
-            for p in prompts[file]:
-                if p[0]<3 and p[1]==1:
-                    prompts[file].append([3, 0, p[2]])
+            obj_id = 0 if p[0]=='CR' else 1 if p[0]=='pupil' else 2 if p[0]=='iris' else 3
+            label = int(p[3])   # 1 is positive prompt, 0 negative
+            point_coord = tuple((int(x) for x in p[1:3]))
+            prompts[file][obj_id]['coords'].append(point_coord)
+            prompts[file][obj_id]['labels'].append(label)
     return prompts
 
 
@@ -131,9 +109,8 @@ if __name__ == '__main__':
     prompts_base = pathlib.Path(r"D:\prompts")
     output_base  = pathlib.Path(r"D:\output")
     dataset = '2023-04-25_1000Hz_100_EL' #'2023-09-12 1000 Hz many subjects' #
-    N_prompts = 1
+    N_prompts = 9
     model = ('l','large') # ('t','tiny') # ('l','large')
-    sclera = True
 
     # Path containing the videos (zip files or subdirectory of videos)
     input_dir = video_base / dataset
@@ -150,11 +127,10 @@ if __name__ == '__main__':
         video_files = list(subject.rglob("*.mp4"))
         video_files = natsort.natsorted(video_files)
         for i,video_file in enumerate(video_files):
-            #if i>3:
+            # if i>1:
             #    break
             try:
-                extra = '_sclera' if sclera else ''
-                this_output_path = output_base / f'{N_prompts}_prompt_frames{extra}' / model[1] / dataset / subject.name / video_file.stem
+                this_output_path = output_base / f'{N_prompts}_prompt_frames_sclera_take2' / model[1] / dataset / subject.name / video_file.stem
                 print(f"############## {this_output_path} ##############")
                 this_output_path.mkdir(parents=True, exist_ok=True)
 
@@ -163,7 +139,7 @@ if __name__ == '__main__':
                     print(f"Already done. Skipping {dataset}/{subject.name}/{video_file.name}")
                     continue
 
-                prompts = load_prompts_from_folder(prompts_base / dataset / subject.name, N=N_prompts, include_sclera=sclera)
+                prompts = load_prompts_from_folder(prompts_base / dataset / subject.name, N=N_prompts)
 
                 inference_state = predictor.init_state(video_path=str(video_file)
                                                     , offload_video_to_cpu=offload_to_cpu
