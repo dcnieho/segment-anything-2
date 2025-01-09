@@ -32,7 +32,7 @@ if device.type == "cuda":
         torch.backends.cuda.matmul.allow_tf32 = True
         torch.backends.cudnn.allow_tf32 = True
 
-mask_clrs = ((0,0,255),(0,255,0),(255,0,0))
+mask_clrs = ((0,0,255),(0,255,0),(255,0,0),(0,255,255))
 
 def propagate(predictor, inference_state, chunk_size, save_path=None, prompts=None, extra_output_mask_frames=0):
     # run propagation throughout the video and collect the results in a dict
@@ -78,9 +78,9 @@ def propagate(predictor, inference_state, chunk_size, save_path=None, prompts=No
             video_segments.clear()
     yield video_segments
 
-def load_prompts_from_folder(folder: pathlib.Path, N: int):
+def load_prompts_from_folder(folder: pathlib.Path, N: int, include_sclera: bool):
     # prompts are stored in text files, one per image load prompts for first N images (or less if there are less)
-    prompt_files = list(folder.rglob("*.txt"))
+    prompt_files = list(folder.rglob("*_prompts.txt"))
     prompt_files = natsort.natsorted(prompt_files)
     if N is not None:
         prompt_files = prompt_files[:N]
@@ -107,6 +107,22 @@ def load_prompts_from_folder(folder: pathlib.Path, N: int):
         for p in prompts[file]:
             if p[0]<2 and p[1]==1:
                 prompts[file].append([2, 0, p[2]])
+
+        # deal with sclera if wanted
+        if include_sclera:
+            fp2 = fp.parent / f'{fp.stem}_sclera{fp.suffix}'
+            with open(fp2) as f:
+                reader = csv.reader(f, delimiter="\t")
+                pr = list(reader)
+            # add positive sclera prompts
+            for p in pr:
+                label = 1   # 1 is positive prompt, 0 negative
+                point_coord = tuple((int(x) for x in p[1:]))
+                prompts[file].append([3, label, point_coord])
+            # add all previous as negative prompts
+            for p in prompts[file]:
+                if p[0]<3 and p[1]==1:
+                    prompts[file].append([3, 0, p[2]])
     return prompts
 
 
@@ -114,9 +130,10 @@ if __name__ == '__main__':
     video_base   = pathlib.Path(r"D:\datasets")
     prompts_base = pathlib.Path(r"D:\prompts")
     output_base  = pathlib.Path(r"D:\output")
-    dataset = '2023-04-25_1000Hz_100_EL'
+    dataset = '2023-04-25_1000Hz_100_EL' #'2023-09-12 1000 Hz many subjects' #
     N_prompts = 1
-    model = ('l','large') # ('t','tiny')
+    model = ('l','large') # ('t','tiny') # ('l','large')
+    sclera = True
 
     # Path containing the videos (zip files or subdirectory of videos)
     input_dir = video_base / dataset
@@ -132,18 +149,21 @@ if __name__ == '__main__':
         print(f"############## {subject.name} ##############")
         video_files = list(subject.rglob("*.mp4"))
         video_files = natsort.natsorted(video_files)
-        for video_file in video_files:
+        for i,video_file in enumerate(video_files):
+            #if i>3:
+            #    break
             try:
-                this_output_path = output_base / f'{N_prompts}_prompt_frames' / model[1] / dataset / subject.name / video_file.stem
+                extra = '_sclera' if sclera else ''
+                this_output_path = output_base / f'{N_prompts}_prompt_frames{extra}' / model[1] / dataset / subject.name / video_file.stem
                 print(f"############## {this_output_path} ##############")
                 this_output_path.mkdir(parents=True, exist_ok=True)
 
                 savepath_videosegs = this_output_path / 'segments_0.pickle.gz'
-                if os.path.exists(savepath_videosegs):
+                if os.path.exists(savepath_videosegs) and True:
                     print(f"Already done. Skipping {dataset}/{subject.name}/{video_file.name}")
                     continue
 
-                prompts = load_prompts_from_folder(prompts_base / dataset / subject.name, N=N_prompts)
+                prompts = load_prompts_from_folder(prompts_base / dataset / subject.name, N=N_prompts, include_sclera=sclera)
 
                 inference_state = predictor.init_state(video_path=str(video_file)
                                                     , offload_video_to_cpu=offload_to_cpu
