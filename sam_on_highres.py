@@ -159,7 +159,8 @@ if __name__ == '__main__':
                 torch.cuda.empty_cache()
 
             except Exception as e:
-                predictor.reset_state(inference_state)
+                if 'inference_state' in globals():
+                    predictor.reset_state(inference_state)
                 gc.collect()
                 torch.cuda.empty_cache()
 
