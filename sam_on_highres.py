@@ -83,8 +83,17 @@ def propagate(predictor, inference_state, chunk_size, save_path=None, prompts=No
 
 def load_prompts_from_folder(folder: pathlib.Path, N: int):
     # prompts are stored in text files, one per image load prompts for first N images (or less if there are less)
-    prompt_files = list(folder.glob("*_prompts_all.txt"))
-    prompt_files = natsort.natsorted(prompt_files)
+    prompt_files_full = list(folder.glob("*_prompts_all_added.txt"))
+    prompt_files_full = natsort.natsorted(prompt_files_full)
+    prompt_files_backup = list(folder.glob("*_prompts_all.txt"))
+    prompt_files_backup = natsort.natsorted(prompt_files_backup)
+    prompt_files = []
+    for p in range(1,10):
+        matching = [x.name.startswith(f'trial_{p:02d}') for x in prompt_files_full]
+        if any(matching):
+            prompt_files.append(prompt_files_full[np.argwhere([x.name.startswith(f'trial_{p:02d}') for x in prompt_files_full]).item()])
+        else:
+            prompt_files.append(prompt_files_backup[p-1])
     if N is not None:
         prompt_files = prompt_files[:N]
     # dict with key (full) filename, containing per object a list of coordinates and associated labels
