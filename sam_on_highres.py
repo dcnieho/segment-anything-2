@@ -102,7 +102,7 @@ def load_prompts_from_folder(folder: pathlib.Path, N: int):
         with open(fp) as f:
             reader = csv.reader(f, delimiter="\t")
             pr = list(reader)
-        file = fp.with_name('_'.join(fp.stem.split('_')[:-2])+'.png')
+        file = fp.with_name('_'.join(fp.stem.split('_')[:4])+'.png')
         prompts[file] = {0:{'coords':[], 'labels':[]}, 1:{'coords':[], 'labels':[]}, 2:{'coords':[], 'labels':[]}, 3:{'coords':[], 'labels':[]}}
         for p in pr:
             obj_id = 0 if p[0]=='CR' else 1 if p[0]=='pupil' else 2 if p[0]=='iris' else 3
