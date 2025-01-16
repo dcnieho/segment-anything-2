@@ -81,7 +81,7 @@ def propagate(predictor, inference_state, chunk_size, save_path=None, prompts=No
             video_segments.clear()
     yield video_segments
 
-def load_prompts_from_folder(folder: pathlib.Path, N: int):
+def load_prompts_from_folder(folder: pathlib.Path, N: int, load_added: bool):
     # prompts are stored in text files, one per image load prompts for first N images (or less if there are less)
     prompt_files_full = list(folder.glob("*_prompts_all_added.txt"))
     prompt_files_full = natsort.natsorted(prompt_files_full)
@@ -90,7 +90,7 @@ def load_prompts_from_folder(folder: pathlib.Path, N: int):
     prompt_files = []
     for p in range(1,10):
         matching = [x.name.startswith(f'trial_{p:02d}') for x in prompt_files_full]
-        if any(matching):
+        if any(matching) and load_added:
             prompt_files.append(prompt_files_full[np.argwhere([x.name.startswith(f'trial_{p:02d}') for x in prompt_files_full]).item()])
         else:
             prompt_files.append(prompt_files_backup[p-1])
@@ -148,7 +148,7 @@ if __name__ == '__main__':
                     print(f"Already done. Skipping {dataset}/{subject.name}/{video_file.name}")
                     continue
 
-                prompts = load_prompts_from_folder(prompts_base / dataset / subject.name, N=N_prompts)
+                prompts = load_prompts_from_folder(prompts_base / dataset / subject.name, N=N_prompts, load_added=False)
 
                 inference_state = predictor.init_state(video_path=str(video_file)
                                                     , offload_video_to_cpu=offload_to_cpu
