@@ -35,13 +35,13 @@ if device.type == "cuda":
 mask_clrs = ((0,0,255),(0,255,0),(255,0,0),(0,255,255))
 sizes = (6,12,18,24)
 
-def propagate(predictor, inference_state, chunk_size, save_path=None, prompts=None, extra_output_mask_frames=0):
+def propagate(predictor, inference_state, chunk_size, save_path=None, prompts=None, extra_output_mask_frames=0, save_range=None):
     # run propagation throughout the video and collect the results in a dict
     video_segments = {}  # video_segments contains the per-frame segmentation results
     for out_frame_idx, out_obj_ids, out_mask_logits in predictor.propagate_in_video(inference_state):
         video_segments[out_frame_idx] = {out_obj_id: (out_mask_logits[i] > 0.0).cpu().numpy() for i, out_obj_id in enumerate(out_obj_ids)}
         video_segments[out_frame_idx]['image_file'] = inference_state['images'].img_paths[min(out_frame_idx,len(inference_state['images'].img_paths)-1)]
-        if out_frame_idx<(len(prompts) if prompts is not None else 0)+extra_output_mask_frames and save_path:
+        if save_path and (out_frame_idx<(len(prompts) if prompts is not None else 0)+extra_output_mask_frames or (save_range and out_frame_idx in save_range)):
             img = inference_state["images"].get_frame(out_frame_idx)
             img = img.permute(1,2,0).cpu().numpy()
             img_min, img_max = img.min(), img.max()
