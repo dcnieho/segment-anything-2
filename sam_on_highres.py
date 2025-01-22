@@ -33,6 +33,7 @@ if device.type == "cuda":
         torch.backends.cudnn.allow_tf32 = True
 
 mask_clrs = ((0,0,255),(0,255,0),(255,0,0),(0,255,255))
+sizes = (6,12,18,24)
 
 def propagate(predictor, inference_state, chunk_size, save_path=None, prompts=None, extra_output_mask_frames=0):
     # run propagation throughout the video and collect the results in a dict
@@ -70,10 +71,10 @@ def propagate(predictor, inference_state, chunk_size, save_path=None, prompts=No
                     for c,l in zip(pr['coords'],pr['labels']):
                         p = [int(x) for x in c]
                         if l==1:
-                            img = cv2.drawMarker(img, (p[0], p[1]), clr, cv2.MARKER_CROSS, 5, 1)
+                            img = cv2.drawMarker(img, (p[0], p[1]), clr, cv2.MARKER_CROSS, 6, 2)
                             # img = cv2.circle(img, (p[0], p[1]), 2, clr, -1)
                         else:
-                            img = cv2.drawMarker(img, (p[0], p[1]), clr, cv2.MARKER_SQUARE, 4, 1)
+                            img = cv2.drawMarker(img, (p[0], p[1]), clr, cv2.MARKER_SQUARE, sizes[o], 2)
                             #img = cv2.rectangle(img, (p[0]-1, p[1]-1), (p[0]+1, p[1]+1), clr, -1)
                 Image.fromarray(img).save(pathlib.Path(save_path) / f'frame{out_frame_idx}_mask_all_prompts.png')
         if out_frame_idx>0 and out_frame_idx%chunk_size == 0:
