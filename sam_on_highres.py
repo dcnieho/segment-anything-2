@@ -56,11 +56,11 @@ def propagate(predictor, inference_state, chunk_size, save_path=None, prompts=No
                 clrImg[:,:] = mask_clrs[i]
                 clrMask = cv2.bitwise_and(clrImg, clrImg, mask=mask)
                 # make image with just this object
-                img2 = cv2.addWeighted(clrMask, .6, ori_img, .4, 0)
+                img2 = cv2.addWeighted(clrMask, .4, ori_img, .6, 0)
                 ori_img_masked = cv2.add(cv2.bitwise_or(ori_img,ori_img,mask=cv2.bitwise_not(mask*255)), cv2.bitwise_or(img2,img2,mask=mask))
                 Image.fromarray(ori_img_masked).save(pathlib.Path(save_path) / f'frame{out_frame_idx}_mask_obj{oid}.png')
                 # make combined image
-                img2 = cv2.addWeighted(clrMask, .6, img, .4, 0)
+                img2 = cv2.addWeighted(clrMask, .4, img, .6, 0)
                 img = cv2.add(cv2.bitwise_or(img,img,mask=cv2.bitwise_not(mask*255)), cv2.bitwise_or(img2,img2,mask=mask))
             Image.fromarray(img).save(pathlib.Path(save_path) / f'frame{out_frame_idx}_mask_all.png')
             if prompts is not None and out_frame_idx<len(prompts):
