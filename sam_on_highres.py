@@ -119,7 +119,7 @@ if __name__ == '__main__':
     prompts_base = pathlib.Path(r"D:\prompts")
     output_base  = pathlib.Path(r"D:\output")
     dataset = '2023-04-25_1000Hz_100_EL' #'2023-09-12 1000 Hz many subjects' #
-    N_prompts = 9
+    N_prompts = 1
     model = ('l','large') # ('t','tiny') # ('l','large')
 
     # Path containing the videos (zip files or subdirectory of videos)
