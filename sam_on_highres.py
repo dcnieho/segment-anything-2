@@ -82,21 +82,10 @@ def propagate(predictor, inference_state, chunk_size, save_path=None, prompts=No
             video_segments.clear()
     yield video_segments
 
-def load_prompts_from_folder(folder: pathlib.Path, N: int, load_added: bool):
-    # prompts are stored in text files, one per image load prompts for first N images (or less if there are less)
-    prompt_files_full = list(folder.glob("*_prompts_all_added.txt"))
-    prompt_files_full = natsort.natsorted(prompt_files_full)
-    prompt_files_backup = list(folder.glob("*_prompts_all.txt"))
-    prompt_files_backup = natsort.natsorted(prompt_files_backup)
-    prompt_files = []
-    for p in range(1,10):
-        matching = [x.name.startswith(f'trial_{p:02d}') for x in prompt_files_full]
-        if any(matching) and load_added:
-            prompt_files.append(prompt_files_full[np.argwhere([x.name.startswith(f'trial_{p:02d}') for x in prompt_files_full]).item()])
-        else:
-            prompt_files.append(prompt_files_backup[p-1])
-    if N is not None:
-        prompt_files = prompt_files[:N]
+def load_prompts_from_folder(folder: pathlib.Path):
+    # prompts are stored in text files
+    prompt_files = list(folder.glob("*_prompts.txt"))
+    prompt_files = natsort.natsorted(prompt_files)
     # dict with key (full) filename, containing per object a list of coordinates and associated labels
     prompts: dict[pathlib.Path,list[int,int,tuple[int,int]]] = {}
     for fp in prompt_files:
@@ -115,16 +104,13 @@ def load_prompts_from_folder(folder: pathlib.Path, N: int, load_added: bool):
 
 
 if __name__ == '__main__':
-    video_base   = pathlib.Path(r"D:\datasets")
-    prompts_base = pathlib.Path(r"D:\prompts")
-    output_base  = pathlib.Path(r"D:\output")
-    dataset = '2023-04-25_1000Hz_100_EL' #'2023-09-12 1000 Hz many subjects' #
-    N_prompts = 1
+    input_dir   = pathlib.Path(r"D:\to_share\videos")
+    prompts_base = pathlib.Path(r"D:\to_share\prompts")
+    output_base  = pathlib.Path(r"D:\to_share\output")
     model = ('l','large') # ('t','tiny') # ('l','large')
 
     # Path containing the videos (zip files or subdirectory of videos)
-    input_dir = video_base / dataset
-    subject_folders = [pathlib.Path(f.path) for f in os.scandir(input_dir) if f.is_dir() and not 'eyelink' in (p:=pathlib.Path(f.path)).stem]
+    subject_folders = [pathlib.Path(f.path) for f in os.scandir(input_dir) if f.is_dir()]
     subject_folders = natsort.natsorted(subject_folders)
 
     predictor = build_sam2_video_predictor(f"configs/sam2.1/sam2.1_hiera_{model[0]}.yaml", f"checkpoints/sam2.1_hiera_{model[1]}.pt", device=device)
@@ -137,19 +123,17 @@ if __name__ == '__main__':
         video_files = list(subject.rglob("*.mp4"))
         video_files = natsort.natsorted(video_files)
         for i,video_file in enumerate(video_files):
-            # if i>1:
-            #    break
             try:
-                this_output_path = output_base / f'{N_prompts}_prompt_frames_sclera_take2' / model[1] / dataset / subject.name / video_file.stem
+                this_output_path = output_base / model[1] / subject.name / video_file.stem
                 print(f"############## {this_output_path} ##############")
                 this_output_path.mkdir(parents=True, exist_ok=True)
 
                 savepath_videosegs = this_output_path / 'segments_0.pickle.gz'
-                if os.path.exists(savepath_videosegs) and True:
-                    print(f"Already done. Skipping {dataset}/{subject.name}/{video_file.name}")
+                if os.path.exists(savepath_videosegs):
+                    print(f"Already done. Skipping {subject.name}/{video_file.name}")
                     continue
 
-                prompts = load_prompts_from_folder(prompts_base / dataset / subject.name, N=N_prompts, load_added=False)
+                prompts = load_prompts_from_folder(prompts_base / subject.name)
 
                 inference_state = predictor.init_state(video_path=str(video_file)
                                                     , offload_video_to_cpu=offload_to_cpu
