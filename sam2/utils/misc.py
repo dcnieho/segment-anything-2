@@ -304,7 +304,7 @@ def load_video_frames_with_cache(
             src_type = 'video'
         else:
             raise NotImplementedError(
-                "Only JPEG and PNG frames in directories or zip files, or MP¤, AVI and MOV video files are supported. Use ffmpeg to extract frames from other videos if needed."
+                "Only JPEG and PNG frames in directories or zip files, or MP4, AVI and MOV video files are supported. Use ffmpeg to extract frames from other videos if needed."
             )
     else:
         raise NotImplementedError(
