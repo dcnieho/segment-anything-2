@@ -115,6 +115,8 @@ class SAM2VideoPredictor(SAM2Base):
             for idx,f_name in enumerate(separate_prompts):
                 prompts = separate_prompts[f_name]
                 for o in prompts:
+                    if o=='frame':
+                        continue
                     # self.add_new_points_or_box(
                     #     inference_state=inference_state,
                     #     frame_idx=idx,
@@ -127,7 +129,7 @@ class SAM2VideoPredictor(SAM2Base):
                     for c,l in zip(prompts[o]['coords'],prompts[o]['labels']):
                         self.add_new_points_or_box(
                             inference_state=inference_state,
-                            frame_idx=idx,
+                            frame_idx=prompts['frame'] if 'frame' in prompts else idx,
                             obj_id=o,
                             points = np.array(c).reshape(-1,2),
                             labels = np.array([l]),  # 1 is positive click, 0 is negative click
