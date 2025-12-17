@@ -111,8 +111,8 @@ def load_prompts_from_folder(folder: pathlib.Path):
 
 if __name__ == '__main__':
     input_dir   = pathlib.Path(r"\\et-nas.humlab.lu.se\FLEX\2023 Sean_datasets\2023-04-25_1000Hz_100_EL")
-    prompts_base = pathlib.Path(r"\\et-nas.humlab.lu.se\FLEX\2025 SAM2_3\highres\prompts")
-    output_base  = pathlib.Path(r"\\et-nas.humlab.lu.se\FLEX\2025 SAM2_3\highres\output")
+    prompts_base = pathlib.Path(r"\\et-nas.humlab.lu.se\FLEX\2025 SAM2_3\highres\prompts\SAM2")
+    output_base  = pathlib.Path(r"\\et-nas.humlab.lu.se\FLEX\2025 SAM2_3\highres\output\SAM2_point_prompts")
     model = ('l','large') # ('t','tiny') # ('l','large')
     run_reversed = False
 
