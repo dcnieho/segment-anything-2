@@ -77,7 +77,6 @@ def save_output_with_prompt(out_frame_idx, prompts, video_segments, save_path):
 
 def propagate(predictor, inference_state, chunk_size, prompts, save_path=None, save_range=None, stop_early=False):
     # run propagation throughout the video and collect the results in a dict
-    # simplify prompts, only one prompt file here
     prompt_frames = sorted([p['frame'] for p in prompts.values()])
     segments = prompt_frames.copy()
     if segments[0]>0:
