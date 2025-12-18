@@ -128,6 +128,15 @@ if __name__ == '__main__':
         print(f"############## {subject.name} ##############")
         video_files = list(subject.glob("*.mp4"))
         video_files = natsort.natsorted(video_files, reverse=run_reversed)
+        if not video_files:
+            print(f"No video files found for subject {subject.name}, skipping.")
+            continue
+
+        if not (prompts_base / subject.name).exists():
+            print(f"No prompts found for subject {subject.name}, skipping.")
+            continue
+        prompts = load_prompts_from_folder(prompts_base / subject.name)
+
         for i,video_file in enumerate(video_files):
             try:
                 this_output_path = output_base / subject.name / video_file.stem
@@ -138,8 +147,6 @@ if __name__ == '__main__':
                 if os.path.exists(savepath_videosegs):
                     print(f"Already done. Skipping {subject.name}/{video_file.name}")
                     continue
-
-                prompts = load_prompts_from_folder(prompts_base / subject.name)
 
                 inference_state = predictor.init_state(video_path=str(video_file)
                                                     , offload_video_to_cpu=offload_to_cpu
