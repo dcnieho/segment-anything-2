@@ -213,7 +213,7 @@ if __name__ == '__main__':
                                                     , image_cache_size=cache_size
                                                     , image_feature_cache_size=image_feature_cache_size)
 
-                to_save = list(range(0,1200,10))+list(range(1200,100000000,100))
+                to_save = {*range(0,1200,10), *range(1200,1000000,100)}
                 for i,video_segments in enumerate(propagate(predictor, inference_state, chunk_size, prompts, this_output_path, save_range=to_save, stop_early=False)):
                     savepath_videosegs = this_output_path / f'segments_{i}.pickle.gz'
                     with open(savepath_videosegs, 'wb') as handle:
