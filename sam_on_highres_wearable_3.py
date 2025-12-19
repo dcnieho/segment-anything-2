@@ -1,7 +1,6 @@
 import os
 os.environ['TORCH_CUDNN_SDPA_ENABLED'] = '1'
 import numpy as np
-import pandas as pd
 import torch
 import pickle
 import compress_pickle
