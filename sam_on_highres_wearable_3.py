@@ -166,14 +166,15 @@ def load_prompts_from_folder(folder: pathlib.Path, file_name: str):
 
 
 if __name__ == '__main__':
-    input_dir   = pathlib.Path(r"C:\Users\Dee\Desktop\pupilValidation\basler")
-    prompts_base = pathlib.Path(r"C:\Users\Dee\Desktop\pupilValidation\annotate_pupil_basler\prompts")
-    output_base  = pathlib.Path(r"C:\Users\Dee\Desktop\pupilValidation\annotate_pupil_basler\segmentation")
+    input_dirs   = [pathlib.Path(r"D:\datasets\pupil_validation")]
+    prompts_base = pathlib.Path(r"\\et-nas.humlab.lu.se\FLEX\2025 SAM2_3\highres\prompts\SAM2")
+    output_base  = pathlib.Path(r"\\et-nas.humlab.lu.se\FLEX\2025 SAM2_3\highres\output\SAM2_point_prompts")
     model = ('l','large') # ('t','tiny') # ('l','large')
+    run_reversed = False
 
     # Path containing the videos (zip files or subdirectory of videos)
-    subject_folders = [pathlib.Path(f.path) for f in os.scandir(input_dir) if f.is_dir() and (pathlib.Path(prompts_base)/f.name).is_dir()]
-    subject_folders = natsort.natsorted(subject_folders, reverse=True)
+    subject_folders = [pathlib.Path(f.path) for d in input_dirs for f in os.scandir(d) if f.is_dir()]
+    subject_folders = natsort.natsorted(subject_folders, reverse=run_reversed)
 
     predictor = build_sam2_video_predictor(f"configs/sam2.1/sam2.1_hiera_{model[0]}.yaml", f"checkpoints/sam2.1_hiera_{model[1]}.pt", device=device)
     offload_to_cpu = False
