@@ -150,7 +150,7 @@ def load_prompts_from_folder(folder: pathlib.Path, file_name: str):
             reader = csv.reader(f, delimiter="\t")
             pr = list(reader)
         # get associated frame
-        if not (pim:=folder/pf.stem.removesuffix('_prompts')).is_file():
+        if not (pim:=folder/(pf.stem.removesuffix('_prompts')+'.png')).is_file():
             raise ValueError('missing prompt image file')   # actually it isn't used, but still, strange
         prompt_img,pim = extract_last_number_and_fix_fname(pim.name)
 
