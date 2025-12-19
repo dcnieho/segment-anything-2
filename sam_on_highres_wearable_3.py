@@ -74,7 +74,7 @@ def save_output_with_prompt(out_frame_idx, prompts, video_segments, save_path):
                     #img = cv2.rectangle(img, (p[0]-1, p[1]-1), (p[0]+1, p[1]+1), clr, -1)
     Image.fromarray(img).save(pathlib.Path(save_path) / f'frame{out_frame_idx}_mask_all.png')
 
-def propagate(predictor, inference_state, chunk_size, prompts, save_path=None, save_range=None, stop_early=False):
+def propagate(predictor, inference_state, chunk_size, prompts, save_path=None, save_range=None):
     # run propagation throughout the video and collect the results in a dict
     prompt_frames = sorted([p['frame'] for p in prompts.values()])
     segments = prompt_frames.copy()
@@ -128,8 +128,6 @@ def propagate(predictor, inference_state, chunk_size, prompts, save_path=None, s
             if out_frame_idx>0 and out_frame_idx%chunk_size == 0:
                 yield video_segments
                 video_segments.clear()
-                if stop_early:
-                    break
     yield video_segments
 
 def extract_last_number_and_fix_fname(filename):
@@ -213,7 +211,7 @@ if __name__ == '__main__':
                                                     , image_feature_cache_size=image_feature_cache_size)
 
                 to_save = {*range(0,1200,10), *range(1200,1000000,100)}
-                for i,video_segments in enumerate(propagate(predictor, inference_state, chunk_size, prompts, this_output_path, save_range=to_save, stop_early=False)):
+                for i,video_segments in enumerate(propagate(predictor, inference_state, chunk_size, prompts, this_output_path, save_range=to_save)):
                     savepath_videosegs = this_output_path / f'segments_{i}.pickle.gz'
                     with open(savepath_videosegs, 'wb') as handle:
                         compress_pickle.dump(video_segments, handle, pickler_kwargs={'protocol': pickle.HIGHEST_PROTOCOL})
