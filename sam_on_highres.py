@@ -109,14 +109,14 @@ def load_prompts_from_folder(folder: pathlib.Path):
 
 
 if __name__ == '__main__':
-    input_dir   = pathlib.Path(r"\\et-nas.humlab.lu.se\FLEX\2023 Sean_datasets\2023-04-25_1000Hz_100_EL")
+    input_dirs   = [pathlib.Path(r"\\et-nas.humlab.lu.se\FLEX\2023 Sean_datasets\2023-04-25_1000Hz_100_EL"), pathlib.Path(r"\\et-nas.humlab.lu.se\FLEX\2023 Sean_datasets\2023-09-12 1000 Hz many subjects")]
     prompts_base = pathlib.Path(r"\\et-nas.humlab.lu.se\FLEX\2025 SAM2_3\highres\prompts\SAM2")
     output_base  = pathlib.Path(r"\\et-nas.humlab.lu.se\FLEX\2025 SAM2_3\highres\output\SAM2_point_prompts")
     model = ('l','large') # ('t','tiny') # ('l','large')
     run_reversed = False
 
     # Path containing the videos (zip files or subdirectory of videos)
-    subject_folders = [pathlib.Path(f.path) for f in os.scandir(input_dir) if f.is_dir()]
+    subject_folders = [pathlib.Path(f.path) for d in input_dirs for f in os.scandir(d) if f.is_dir()]
     subject_folders = natsort.natsorted(subject_folders, reverse=run_reversed)
 
     predictor = build_sam2_video_predictor(f"configs/sam2.1/sam2.1_hiera_{model[0]}.yaml", f"checkpoints/sam2.1_hiera_{model[1]}.pt", device=device)
