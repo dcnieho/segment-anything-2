@@ -190,7 +190,7 @@ if __name__ == '__main__':
                 continue
             prompt_files = list((prompts_base / subject.name).glob(video_file.name+"_*_prompts.txt"))
             if len(prompt_files)<1:
-                print('prompts not found')
+                print(f'prompts not found for video {video_file.name}, skipping.')
                 continue
             try:
                 this_output_path = output_base / subject.name / video_file.stem
@@ -198,9 +198,9 @@ if __name__ == '__main__':
                 this_output_path.mkdir(parents=True, exist_ok=True)
 
                 savepath_videosegs = this_output_path / 'segments_0.pickle.gz'
-                # if os.path.exists(savepath_videosegs):
-                #     print(f"Already done. Skipping {subject.name}/{video_file.name}")
-                #     continue
+                if os.path.exists(savepath_videosegs):
+                    print(f"Already done. Skipping {subject.name}/{video_file.name}")
+                    continue
 
                 prompts = load_prompts_from_folder(prompts_base / subject.name, video_file.name)
 
