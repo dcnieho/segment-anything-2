@@ -183,9 +183,16 @@ if __name__ == '__main__':
     image_feature_cache_size = 100
     for subject in subject_folders:
         print(f"############## {subject.name} ##############")
-        video_files = []
-        for v in range(1,7):
-            video_files.extend([subject/f"cam1_R00{v}.mp4",subject/f"cam2_R00{v}.mp4"])
+        video_files = list(subject.glob("*.mp4"))
+        video_files = natsort.natsorted(video_files, reverse=run_reversed)
+        if not video_files:
+            print(f"No video files found for subject {subject.name}, skipping.")
+            continue
+
+        if not (prompts_base / subject.name).exists():
+            print(f"No prompts found for subject {subject.name}, skipping.")
+            continue
+
         for i,video_file in enumerate(video_files):
             if not video_file.exists():
                 continue
