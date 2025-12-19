@@ -114,13 +114,13 @@ def propagate(predictor, inference_state, chunk_size, prompts, save_path=None, s
                         clear_old_points=False
                     )
         if reverse:
-            for out_frame_idx, out_obj_ids, out_mask_logits in predictor.propagate_in_video(inference_state, reverse=True):
+            for out_frame_idx, out_obj_ids, out_mask_logits in predictor.propagate_in_video(inference_state, start_frame_idx=s[1], max_frame_num_to_track=s[1]-s[0]+1, reverse=True):
                 video_segments[out_frame_idx] = {out_obj_id: (out_mask_logits[i] > 0.0).cpu().numpy() for i, out_obj_id in enumerate(out_obj_ids)}
                 video_segments[out_frame_idx]['image_file'] = inference_state['images'].img_paths[min(out_frame_idx,len(inference_state['images'].img_paths)-1)]
                 if save_path and (out_frame_idx in prompt_frames or (save_range and out_frame_idx in save_range)):
                     save_output_with_prompt(out_frame_idx, prompts, video_segments, save_path)
             continue
-        for out_frame_idx, out_obj_ids, out_mask_logits in predictor.propagate_in_video(inference_state, start_frame_idx=s[0], max_frame_num_to_track=s[1]):
+        for out_frame_idx, out_obj_ids, out_mask_logits in predictor.propagate_in_video(inference_state, start_frame_idx=s[0], max_frame_num_to_track=s[1]-s[0]+1):
             video_segments[out_frame_idx] = {out_obj_id: (out_mask_logits[i] > 0.0).cpu().numpy() for i, out_obj_id in enumerate(out_obj_ids)}
             video_segments[out_frame_idx]['image_file'] = inference_state['images'].img_paths[min(out_frame_idx,len(inference_state['images'].img_paths)-1)]
             if save_path and ((prompts is not None and out_frame_idx in prompt_frames) or (save_range and out_frame_idx in save_range)):
