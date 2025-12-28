@@ -132,7 +132,7 @@ def propagate(predictor, inference_state, chunk_size, prompts, save_path=None, s
         except Exception as e:
             num_frames = inference_state['images'].num_frames
             extra = ''
-            if out_frame_idx > num_frames-10:
+            if out_frame_idx > num_frames-100:
                 yield video_segments
                 # write file indicating frame completed and total number of frames
                 completion_path = pathlib.Path(save_path) / 'segment_info.txt'
