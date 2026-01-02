@@ -1009,12 +1009,12 @@ def retrieve_prompt_from_subject(video_path,
     try:
         iris_gt  = pd.read_csv(iris_file,  sep=';')
     except:
-        print(f'error reading {pupil_file}, skipping')
+        print(f'error reading {iris_file}, skipping')
         return
     try:
         lid_gt   = pd.read_csv(lid_file,   sep=';')
     except:
-        print(f'error reading {pupil_file}, skipping')
+        print(f'error reading {lid_file}, skipping')
         return
 
     # Validity (CENTER X != -1) for both
