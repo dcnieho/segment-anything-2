@@ -57,8 +57,10 @@ def save_output_with_prompt(out_frame_idx, prompts, video_segments, save_path):
         # make combined image
         img2 = cv2.addWeighted(clrMask, .4, img, .6, 0)
         img = cv2.add(cv2.bitwise_or(img,img,mask=cv2.bitwise_not(mask*255)), cv2.bitwise_or(img2,img2,mask=mask))
+    extra = ''
     if prompts is not None and out_frame_idx in (p['frame'] for p in prompts.values()):
         prompt = [p for p in prompts.values() if p['frame']==out_frame_idx][0]
+        extra = '_prompt'
         for o in prompt:
             if o=='frame':
                 continue
@@ -72,7 +74,7 @@ def save_output_with_prompt(out_frame_idx, prompts, video_segments, save_path):
                 else:
                     img = cv2.drawMarker(img, (p[0], p[1]), clr, cv2.MARKER_SQUARE, sizes[o], 2)
                     #img = cv2.rectangle(img, (p[0]-1, p[1]-1), (p[0]+1, p[1]+1), clr, -1)
-    Image.fromarray(img).save(pathlib.Path(save_path) / f'frame{out_frame_idx}_mask_all.png')
+    Image.fromarray(img).save(pathlib.Path(save_path) / f'frame{out_frame_idx}_mask{extra}.png')
 
 def propagate(predictor, inference_state, chunk_size, prompts, save_path=None, save_range=None):
     # run propagation throughout the video and collect the results in a dict
