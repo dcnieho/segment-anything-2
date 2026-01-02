@@ -183,8 +183,8 @@ if __name__ == '__main__':
     vid_dir = 'VIDEOS'
     gt_dir = 'ANNOTATIONS'
     input_dir    = pathlib.Path(r"\\et-nas.humlab.lu.se\FLEX\datasets real\TEyeD")
-    prompts_base = pathlib.Path(r"\\et-nas.humlab.lu.se\FLEX\datasets real\TEyeD\prompts")
-    output_base  = pathlib.Path(r"\\et-nas.humlab.lu.se\FLEX\2025 SAM2_3\TEyeD\output\SAM2_point_prompts")
+    prompts_base = pathlib.Path(r"\\et-nas.humlab.lu.se\FLEX\datasets real\TEyeD\prompts2")
+    output_base  = pathlib.Path(r"\\et-nas.humlab.lu.se\FLEX\2025 SAM2_3\TEyeD\output\SAM2_point_prompts2")
     model = ('l','large') # ('t','tiny') # ('l','large')
     run_reversed = False
 
