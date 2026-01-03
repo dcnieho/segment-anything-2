@@ -1113,9 +1113,11 @@ if __name__ == '__main__':
     root_dir = pathlib.Path(r"\\et-nas.humlab.lu.se\FLEX\datasets real\TEyeD")
     prompt_out_dir = pathlib.Path(r"\\et-nas.humlab.lu.se\FLEX\datasets real\TEyeD\prompts2")
 
+    prompt_frame_hardcode = {'GW_5_7.mp4':10, 'GW_6_6.mp4':12}
+
     datasets = [fp for f in os.scandir(root_dir) if (fp:=pathlib.Path(f.path)).is_dir() and all((fp/s).is_dir() for s in [vid_dir,gt_dir])]
 
     for d in datasets:
         video_files = list((d/vid_dir).glob("*.mp4"))
         for v in video_files:
-            retrieve_prompt_from_subject(v, d/gt_dir, {}, True, prompt_out_dir/d.name)
+            retrieve_prompt_from_subject(v, d/gt_dir, prompt_frame_hardcode, True, prompt_out_dir/d.name)
