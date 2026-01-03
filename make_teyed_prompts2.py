@@ -962,20 +962,23 @@ def retrieve_prompt_from_subject(video_path,
     iris_file  = _resolve_existing_file(video_path, gt_dir, 'iris_eli.txt')
     lid_file   = _resolve_existing_file(video_path, gt_dir, 'lid_lm_2D.txt')
 
+    error = False
     try:
         pupil_gt = pd.read_csv(pupil_file, sep=';')
     except:
         print(f'error reading {pupil_file}, skipping')
-        return
+        error = True
     try:
         iris_gt  = pd.read_csv(iris_file,  sep=';')
     except:
         print(f'error reading {iris_file}, skipping')
-        return
+        error = True
     try:
         lid_gt   = pd.read_csv(lid_file,   sep=';')
     except:
         print(f'error reading {lid_file}, skipping')
+        error = True
+    if error:
         return
 
     valid_pupil = (pupil_gt['CENTER X'] != -1)
