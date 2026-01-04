@@ -80,8 +80,6 @@ def _pick_frame_index_from_valid(valid_pupil: pd.Series,
 # -----------------------
 
 
-import numpy as np
-
 def _line_polygon_intersections(origin: np.ndarray,
                                 direction: np.ndarray,
                                 poly_xy: np.ndarray) -> list[float]:
