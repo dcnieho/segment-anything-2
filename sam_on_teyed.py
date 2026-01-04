@@ -162,7 +162,7 @@ def load_prompts_from_folder(folder: pathlib.Path, file_name: str):
             reader = csv.reader(f, delimiter="\t")
             pr = list(reader)
         # get associated frame
-        frame_files = list((folder).glob(file_name+"*_frame*.png"))
+        frame_files = list((folder).glob(file_name+".mp4_frame*.png"))
         if not frame_files:
             raise ValueError('missing prompt image file')   # actually it isn't used, but still, strange
         pim = frame_files[0].name
