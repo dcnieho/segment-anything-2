@@ -166,9 +166,9 @@ def load_prompts_from_folder(folder: pathlib.Path, file_name: str):
 
 
 if __name__ == '__main__':
-    input_dirs   = [pathlib.Path(r"\\et-nas.humlab.lu.se\Gábor\pupil_size_validation\final recordings 1\basler")]
-    prompts_base = pathlib.Path(r"\\et-nas.humlab.lu.se\FLEX\2025 SAM2_3\highres\prompts\SAM2")
-    output_base  = pathlib.Path(r"\\et-nas.humlab.lu.se\FLEX\2025 SAM2_3\highres\output\SAM2_point_prompts")
+    input_dirs   = [pathlib.Path(r"\\et-nas.humlab.lu.se\Gábor\pupil_size_validation\analysis_set\recordings")]
+    prompts_base = pathlib.Path(r"\\et-nas.humlab.lu.se\Gábor\pupil_size_validation\analysis_set\prompts")
+    output_base  = pathlib.Path(r"\\et-nas.humlab.lu.se\Gábor\pupil_size_validation\analysis_set\segmentation")
     model = ('l','large') # ('t','tiny') # ('l','large')
     run_reversed = False
 
