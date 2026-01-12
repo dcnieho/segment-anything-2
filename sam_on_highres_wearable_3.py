@@ -218,7 +218,8 @@ if __name__ == '__main__':
                                                     , offload_video_to_cpu=offload_to_cpu
                                                     , offload_state_to_cpu=offload_to_cpu
                                                     , image_cache_size=cache_size
-                                                    , image_feature_cache_size=image_feature_cache_size)
+                                                    , image_feature_cache_size=image_feature_cache_size
+                                                    , loader='torchcodec')
 
                 to_save = {*range(0,1200,10), *range(1200,1000000,100)}
                 for i,video_segments in enumerate(propagate(predictor, inference_state, chunk_size, prompts, this_output_path, save_range=to_save)):
