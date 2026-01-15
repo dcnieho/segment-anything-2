@@ -164,6 +164,7 @@ def load_prompts_from_folder(folder: pathlib.Path, file_name: str):
             prompts[pim]['frame'] = prompt_img
             prompts[pim][obj_id]['coords'].append(point_coord)
             prompts[pim][obj_id]['labels'].append(label)
+        print(f"Loaded prompts for frame {pim}")
     return prompts
 
 
