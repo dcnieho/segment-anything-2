@@ -30,7 +30,7 @@ REQUIRED_PACKAGES = [
     "iopath>=0.1.10",
     "pillow>=9.4.0",
     "natsort",
-    "av==11.0.0"
+    "av>=13.0.0"
 ]
 
 EXTRA_PACKAGES = {
